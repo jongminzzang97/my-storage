@@ -9,4 +9,9 @@ public class BasicPageController {
 	public String uploadPage() {
 		return "upload";
 	}
+
+	@GetMapping("/download")
+	public String downloadPage() {
+		return "download";
+	}
 }
