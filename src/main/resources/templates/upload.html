@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>File Upload</title>
+    <script>
+        function uploadFile(event) {
+            event.preventDefault();
+
+            var formData = new FormData();
+            formData.append('fileName', document.getElementById('fileName').value);
+            formData.append('owner', document.getElementById('owner').value);
+            formData.append('multipartFile', document.getElementById('multipartFile').files[0]);
+
+            fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Success:', data);
+                alert('File uploaded successfully!');
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Error uploading file: ' + error.message);
+            });
+        }
+    </script>
+</head>
+<body>
+<h2>Upload File</h2>
+<form onsubmit="uploadFile(event)">
+    <label for="fileName">File Name:</label><br>
+    <input id="fileName" name="fileName" type="text"><br><br>
+
+    <label for="owner">Owner:</label><br>
+    <input id="owner" name="owner" type="text"><br><br>
+
+    <label for="multipartFile">Select file:</label><br>
+    <input id="multipartFile" name="multipartFile" type="file"><br><br>
+
+    <input type="submit" value="Upload">
+</form>
+</body>
+</html>
