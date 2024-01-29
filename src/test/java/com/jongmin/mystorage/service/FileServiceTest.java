@@ -1,6 +1,6 @@
 package com.jongmin.mystorage.service;
 
-import static com.jongmin.mystorage.service.request.FileDownloadRequest.*;
+import static com.jongmin.mystorage.service.request.DefaultFileRequest.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
@@ -25,8 +25,9 @@ import com.jongmin.mystorage.repository.FileRepository;
 import com.jongmin.mystorage.service.file.FileService;
 import com.jongmin.mystorage.service.file.FileServiceResponse;
 import com.jongmin.mystorage.service.file.FileSystemWrapper;
-import com.jongmin.mystorage.service.request.FileDownloadRequest;
+import com.jongmin.mystorage.service.request.DefaultFileRequest;
 import com.jongmin.mystorage.service.request.FileUploadRequest;
+import com.jongmin.mystorage.service.response.StringResponse;
 
 @ExtendWith(SpringExtension.class)
 class FileServiceTest {
@@ -102,13 +103,13 @@ class FileServiceTest {
 		});
 	}
 
-	@DisplayName("파일이 존재하는 경우 성공적으로 resource를 반환해야 한다.")
+	@DisplayName("파일 다운로드시 문제가 없는 경우 resource를 반환해야 한다.")
 	@Test
 	void downloadFile() {
 		// given
 		String fileName = "test.txt";
 		String owner = "user1";
-		FileDownloadRequest request = fileDownloadRequestFromFileNameAndOwner(fileName, owner);
+		DefaultFileRequest request = defaultFileRequestFromFileNameAndOwner(fileName, owner);
 		MyFile myFile = new MyFile();
 		String fileDir = owner + "_" + fileName;
 		Resource mockResource = mock(Resource.class);
@@ -124,13 +125,13 @@ class FileServiceTest {
 		assertEquals(mockResource, result);
 	}
 
-	@DisplayName("파일에 대한 정보가 DB에 존재하지 않을 때는 FileNotFoundException을 던져야 한다.")
+	@DisplayName("파일 다운로드시 파일 정보가 DB에 존재하지 않을 때는 FileNotFoundException을 던져야 한다.")
 	@Test
 	void downloadFileWhenFileNotInDatabase() {
 		// given
 		String fileName = "test.txt";
 		String owner = "user1";
-		FileDownloadRequest request = fileDownloadRequestFromFileNameAndOwner(fileName, owner);
+		DefaultFileRequest request = defaultFileRequestFromFileNameAndOwner(fileName, owner);
 
 
 		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.empty());
@@ -142,13 +143,13 @@ class FileServiceTest {
 		assertEquals("파일에 대한 정보가 DB에 존재하지 않습니다.", exception.getMessage());
 	}
 
-	@DisplayName("파일이 파일 시스템에 존재하지 않을 때는 FileNotFoundException을 던져야 한다.")
+	@DisplayName("파일 다운로드시 파일이 파일 시스템에 존재하지 않을 때는 FileNotFoundException을 던져야 한다.")
 	@Test
 	void downloadFileWhenFileNotInFileSystem() {
 		// given
 		String fileName = "test.txt";
 		String owner = "user1";
-		FileDownloadRequest request = fileDownloadRequestFromFileNameAndOwner(fileName, owner);
+		DefaultFileRequest request = defaultFileRequestFromFileNameAndOwner(fileName, owner);
 		String fileDir = owner + "_" + fileName;
 
 		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.of(new MyFile()));
@@ -159,5 +160,63 @@ class FileServiceTest {
 			fileService.downloadFile(request);
 		});
 		assertEquals("다운로드 하려는 파일이 존재하지 않습니다.", exception.getMessage());
+	}
+
+	@DisplayName("파일 삭제 요청이 정상적으로 처리된 경우 \"파일이 성공적으로 삭제되었습니다.\"를 반환해야한다.")
+	@Test
+	void deleteFile() {
+		// given
+		String fileName = "test.txt";
+		String owner = "user1";
+		DefaultFileRequest request = defaultFileRequestFromFileNameAndOwner(fileName, owner);
+		MyFile myFile = new MyFile();
+		String fileDir = owner + "_" + fileName;
+		Resource mockResource = mock(Resource.class);
+
+		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.of(myFile));
+		given(fileSystemWrapper.fileNotExists(fileDir)).willReturn(false);
+		given(fileSystemWrapper.fileDirToResource(fileDir)).willReturn(mockResource);
+
+		// when
+		StringResponse stringResponse = fileService.deleteFile(request);
+
+		// then
+		assertEquals(stringResponse.getResponse(), "파일이 성공적으로 삭제되었습니다.");
+	}
+
+	@DisplayName("파일 삭제시 파일 정보가 DB에 존재하지 않을 때는 FileNotFoundException을 던져야 한다.")
+	@Test
+	void deleteFileWhenFileNotInDatabase() {
+		// given
+		String fileName = "test.txt";
+		String owner = "user1";
+		DefaultFileRequest request = defaultFileRequestFromFileNameAndOwner(fileName, owner);
+
+		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.empty());
+
+		// when-then
+		Exception exception = assertThrows(FileNotInDatabaseException.class, () -> {
+			fileService.deleteFile(request);
+		});
+		assertEquals("파일에 대한 정보가 DB에 존재하지 않습니다.", exception.getMessage());
+	}
+
+	@DisplayName("파일 삭제시 파일이 파일 시스템에 존재하지 않을 때는 FileNotFoundException을 던져야 한다.")
+	@Test
+	void deleteFileWhenFileNotInFileSystem() {
+		// given
+		String fileName = "test.txt";
+		String owner = "user1";
+		DefaultFileRequest request = defaultFileRequestFromFileNameAndOwner(fileName, owner);
+		String fileDir = owner + "_" + fileName;
+
+		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.of(new MyFile()));
+		given(fileSystemWrapper.fileNotExists(fileDir)).willReturn(true);
+
+		// when-then
+		Exception exception = assertThrows(FileNotInFileSystemException.class, () -> {
+			fileService.deleteFile(request);
+		});
+		assertEquals("삭제하려는 파일이 존재하지 않습니다.", exception.getMessage());
 	}
 }

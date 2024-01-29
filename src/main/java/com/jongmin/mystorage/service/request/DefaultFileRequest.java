@@ -6,19 +6,19 @@ import lombok.Builder;
 import lombok.Getter;
 
 @Getter
-public class FileDownloadRequest {
+public class DefaultFileRequest {
 
 	private String fileName;
 	private String owner;
 
 	@Builder
-	private FileDownloadRequest(String fileName, String owner) {
+	private DefaultFileRequest(String fileName, String owner) {
 		this.fileName = fileName;
 		this.owner = owner;
 	}
 
-	public static FileDownloadRequest fileDownloadRequestFromFileNameAndOwner(String fileName, String owner) {
-		return FileDownloadRequest.builder()
+	public static DefaultFileRequest defaultFileRequestFromFileNameAndOwner(String fileName, String owner) {
+		return DefaultFileRequest.builder()
 			.fileName(fileName)
 			.owner(owner)
 			.build();

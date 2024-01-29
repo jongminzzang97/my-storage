@@ -14,4 +14,9 @@ public class BasicPageController {
 	public String downloadPage() {
 		return "download";
 	}
+
+	@GetMapping("/delete")
+	public String deletePage() {
+		return "delete";
+	}
 }

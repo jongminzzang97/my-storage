@@ -36,4 +36,9 @@ public class FileSystemWrapper {
 	public Resource fileDirToResource(String fileDir) {
 		return new FileSystemResource(rootDir + fileDir);
 	}
+
+	public void fileDelete(String fileDir) throws IOException {
+		Path path = Paths.get(rootDir + fileDir);
+		Files.delete(path);
+	}
 }
