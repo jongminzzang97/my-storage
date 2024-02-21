@@ -9,5 +9,5 @@ import com.jongmin.mystorage.model.MyFile;
 
 @Repository
 public interface FileRepository extends JpaRepository<MyFile, Long> {
-	Optional<MyFile> findByOwnerAndName(String owner, String filename);
+	Optional<MyFile> findByOwnerNameAndFileName(String ownerName, String filename);
 }

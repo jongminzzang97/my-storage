@@ -1,7 +1,7 @@
 package com.jongmin.mystorage.model;
 
-import com.jongmin.mystorage.model.enums.FileItemType;
 import com.jongmin.mystorage.model.enums.FileItemStatus;
+import com.jongmin.mystorage.model.enums.FileItemType;
 
 import jakarta.persistence.Entity;
 import lombok.Builder;

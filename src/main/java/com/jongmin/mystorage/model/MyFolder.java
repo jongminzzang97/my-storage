@@ -1,6 +1,7 @@
 package com.jongmin.mystorage.model;
 
 import java.util.List;
+import java.util.UUID;
 
 import com.jongmin.mystorage.model.enums.FileItemStatus;
 import com.jongmin.mystorage.model.enums.FileItemType;
@@ -25,15 +26,16 @@ public class MyFolder extends FileSystemItem {
 	private List<MyFile> files;
 
 	@Builder
-	public MyFolder(String ownerName, String parentPath, String folderName, FileItemStatus status,
-					MyFolder parentFolder, List<MyFolder> childFolders, List<MyFile> files) {
+	public MyFolder(UUID uuid, String ownerName, String parentPath, String folderName, FileItemStatus status, String fullPath,
+					MyFolder parentFolder, String accessRoute) {
+		this.uuid = uuid;
 		this.ownerName = ownerName;
 		this.parentPath = parentPath;
 		this.folderName = folderName;
-		this.status = status;
 		this.fileItemType = FileItemType.FOLDER;
+		this.fullPath = fullPath;
+		this.status = FileItemStatus.SAVED;
 		this.parentFolder = parentFolder;
-		this.childFolders = childFolders;
-		this.files = files;
+		this.accessRoute = ownerName + "/" + uuid;
 	}
 }

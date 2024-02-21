@@ -114,7 +114,7 @@ class FileServiceTest {
 		String fileDir = owner + "_" + fileName;
 		Resource mockResource = mock(Resource.class);
 
-		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.of(myFile));
+		given(fileRepository.findByOwnerNameAndFileName(owner, fileName)).willReturn(Optional.of(myFile));
 		given(fileSystemWrapper.fileNotExists(fileDir)).willReturn(false);
 		given(fileSystemWrapper.fileDirToResource(fileDir)).willReturn(mockResource);
 
@@ -134,7 +134,7 @@ class FileServiceTest {
 		DefaultFileRequest request = defaultFileRequestFromFileNameAndOwner(fileName, owner);
 
 
-		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.empty());
+		given(fileRepository.findByOwnerNameAndFileName(owner, fileName)).willReturn(Optional.empty());
 
 		// when-then
 		Exception exception = assertThrows(FileNotInDatabaseException.class, () -> {
@@ -152,7 +152,7 @@ class FileServiceTest {
 		DefaultFileRequest request = defaultFileRequestFromFileNameAndOwner(fileName, owner);
 		String fileDir = owner + "_" + fileName;
 
-		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.of(new MyFile()));
+		given(fileRepository.findByOwnerNameAndFileName(owner, fileName)).willReturn(Optional.of(new MyFile()));
 		given(fileSystemWrapper.fileNotExists(fileDir)).willReturn(true);
 
 		// when-then
@@ -173,7 +173,7 @@ class FileServiceTest {
 		String fileDir = owner + "_" + fileName;
 		Resource mockResource = mock(Resource.class);
 
-		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.of(myFile));
+		given(fileRepository.findByOwnerNameAndFileName(owner, fileName)).willReturn(Optional.of(myFile));
 		given(fileSystemWrapper.fileNotExists(fileDir)).willReturn(false);
 		given(fileSystemWrapper.fileDirToResource(fileDir)).willReturn(mockResource);
 
@@ -192,7 +192,7 @@ class FileServiceTest {
 		String owner = "user1";
 		DefaultFileRequest request = defaultFileRequestFromFileNameAndOwner(fileName, owner);
 
-		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.empty());
+		given(fileRepository.findByOwnerNameAndFileName(owner, fileName)).willReturn(Optional.empty());
 
 		// when-then
 		Exception exception = assertThrows(FileNotInDatabaseException.class, () -> {
@@ -210,7 +210,7 @@ class FileServiceTest {
 		DefaultFileRequest request = defaultFileRequestFromFileNameAndOwner(fileName, owner);
 		String fileDir = owner + "_" + fileName;
 
-		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.of(new MyFile()));
+		given(fileRepository.findByOwnerNameAndFileName(owner, fileName)).willReturn(Optional.of(new MyFile()));
 		given(fileSystemWrapper.fileNotExists(fileDir)).willReturn(true);
 
 		// when-then

@@ -57,7 +57,7 @@ public class FileService {
 		String fileName = request.getFileName();
 		String owner = request.getOwnerName();
 		String fileDir = owner + "_" + fileName;
-		Optional<MyFile> myFile = fileRepository.findByOwnerAndName(owner, fileName);
+		Optional<MyFile> myFile = fileRepository.findByOwnerNameAndFileName(owner, fileName);
 		if (myFile.isEmpty()) {
 			throw new FileNotInDatabaseException("파일에 대한 정보가 DB에 존재하지 않습니다.");
 		}
@@ -74,7 +74,7 @@ public class FileService {
 		String fileName = request.getFileName();
 		String owner = request.getOwnerName();
 		String fileDir = owner + "_" + fileName;
-		Optional<MyFile> myFile = fileRepository.findByOwnerAndName(owner, fileName);
+		Optional<MyFile> myFile = fileRepository.findByOwnerNameAndFileName(owner, fileName);
 		if (myFile.isEmpty()) {
 			throw new FileNotInDatabaseException("파일에 대한 정보가 DB에 존재하지 않습니다.");
 		}
