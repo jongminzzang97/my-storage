@@ -1,6 +1,6 @@
 package com.jongmin.mystorage.model.enums;
 
-public enum MyFileStatus {
+public enum FileItemStatus {
 	SAVED,
 	SAVING,
 	DELETED

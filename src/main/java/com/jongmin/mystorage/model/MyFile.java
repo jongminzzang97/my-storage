@@ -1,6 +1,7 @@
 package com.jongmin.mystorage.model;
 
-import com.jongmin.mystorage.model.enums.MyFileStatus;
+import com.jongmin.mystorage.model.enums.FileItemType;
+import com.jongmin.mystorage.model.enums.FileItemStatus;
 
 import jakarta.persistence.Entity;
 import lombok.Builder;
@@ -10,19 +11,18 @@ import lombok.NoArgsConstructor;
 @Entity
 @NoArgsConstructor
 @Getter
-public class MyFile extends BaseEntity {
+public class MyFile extends FileSystemItem {
 
-	private String owner;
-	private String name;
+	private String fileName;
 	private Long size;
-	private MyFileStatus status;
 
 	@Builder
-	private MyFile(String owner, String name, Long size) {
-		this.owner = owner;
-		this.name = name;
+	private MyFile(String ownerName, String fileName, Long size, FileItemType fileItemType) {
+		this.ownerName = ownerName;
+		this.fileName = fileName;
 		this.size = size;
-		this.status = MyFileStatus.SAVED;
+		this.status = FileItemStatus.SAVED;
+		this.fileItemType = fileItemType;
 	}
 
 }

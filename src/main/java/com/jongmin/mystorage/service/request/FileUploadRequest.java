@@ -11,20 +11,20 @@ import lombok.Getter;
 public class FileUploadRequest {
 
 	private String fileName;
-	private String owner;
+	private String ownerName;
 	private MultipartFile multipartFile;
 
 	@Builder
-	public FileUploadRequest(String fileName, String owner, MultipartFile multipartFile) {
+	public FileUploadRequest(String fileName, String ownerName, MultipartFile multipartFile) {
 		this.fileName = fileName;
-		this.owner = owner;
+		this.ownerName = ownerName;
 		this.multipartFile = multipartFile;
 	}
 
 	public MyFile toMyFileEntity() {
 		return MyFile.builder()
-			.name(fileName)
-			.owner(owner)
+			.fileName(fileName)
+			.ownerName(ownerName)
 			.size(multipartFile.getSize())
 			.build();
 	}

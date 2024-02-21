@@ -9,12 +9,12 @@ import lombok.Getter;
 public class DefaultFileRequest {
 
 	private String fileName;
-	private String owner;
+	private String ownerName;
 
 	@Builder
 	private DefaultFileRequest(String fileName, String owner) {
 		this.fileName = fileName;
-		this.owner = owner;
+		this.ownerName = owner;
 	}
 
 	public static DefaultFileRequest defaultFileRequestFromFileNameAndOwner(String fileName, String owner) {
@@ -26,8 +26,8 @@ public class DefaultFileRequest {
 
 	public MyFile toMyFileEntity() {
 		return MyFile.builder()
-			.name(fileName)
-			.owner(owner)
+			.fileName(fileName)
+			.ownerName(ownerName)
 			.build();
 	}
 }

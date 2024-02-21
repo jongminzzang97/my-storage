@@ -31,7 +31,7 @@ public class FileService {
 
 	public FileServiceResponse uploadFile(FileUploadRequest request) {
 		String fileName = request.getFileName();
-		String owner = request.getOwner();
+		String owner = request.getOwnerName();
 		String fileDir = owner + "_" + fileName;
 
 		if (owner.contains("_")) {
@@ -55,7 +55,7 @@ public class FileService {
 		// 파일을 다운로드를 위한 Lock을 얻고,
 		// 파일 상태를 확인하고 다운로드 받는 과정이 atomic하게 진행될 수 있도록 추후에 수정이 필요합니다.
 		String fileName = request.getFileName();
-		String owner = request.getOwner();
+		String owner = request.getOwnerName();
 		String fileDir = owner + "_" + fileName;
 		Optional<MyFile> myFile = fileRepository.findByOwnerAndName(owner, fileName);
 		if (myFile.isEmpty()) {
@@ -72,14 +72,14 @@ public class FileService {
 		// 파일 상태를 확인하고 삭제하는 과정이 atomic하게 진행될 수 있도록 추후에 수정이 필요합니다.
 		// 파일을 다운로드 받는 사용자가 있는 경우 역시 고려되어야 합니다.
 		String fileName = request.getFileName();
-		String owner = request.getOwner();
+		String owner = request.getOwnerName();
 		String fileDir = owner + "_" + fileName;
 		Optional<MyFile> myFile = fileRepository.findByOwnerAndName(owner, fileName);
 		if (myFile.isEmpty()) {
 			throw new FileNotInDatabaseException("파일에 대한 정보가 DB에 존재하지 않습니다.");
 		}
 		if (fileSystemWrapper.fileNotExists(fileDir)) {
-			throw new FileNotInFileSystemException("다운로드 하려는 파일이 존재하지 않습니다.");
+			throw new FileNotInFileSystemException("삭제하려는 파일이 존재하지 않습니다.");
 		}
 		try {
 			fileSystemWrapper.fileDelete(fileDir);

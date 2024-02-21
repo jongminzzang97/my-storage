@@ -18,8 +18,8 @@ public class FileServiceResponse {
 
 	public static FileServiceResponse of(MyFile myFile) {
 		return FileServiceResponse.builder()
-			.fileName(myFile.getName())
-			.owner(myFile.getOwner())
+			.fileName(myFile.getFileName())
+			.owner(myFile.getOwnerName())
 			.build();
 	}
 }

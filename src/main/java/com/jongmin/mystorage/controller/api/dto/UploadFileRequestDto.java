@@ -18,7 +18,7 @@ public class UploadFileRequestDto {
 	private String fileName;
 
 	@NotBlank(message = "owner는 Empty이면 안됩니다.")
-	private String owner;
+	private String ownerName;
 
 	@NotNull(message = "파일을 올려주세요.")
 	private MultipartFile multipartFile;
@@ -30,7 +30,7 @@ public class UploadFileRequestDto {
 
 		return FileUploadRequest.builder()
 			.fileName(fileName)
-			.owner(owner)
+			.ownerName(ownerName)
 			.multipartFile(multipartFile)
 			.build();
 	}
