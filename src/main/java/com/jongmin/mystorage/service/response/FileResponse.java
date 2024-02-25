@@ -37,6 +37,7 @@ public class FileResponse {
 			.uuid(file.getUuid())
 			.fileName(file.getFileName())
 			.type(file.getFileItemType())
+			.fullPath(file.getFullPath())
 			.size(file.getSize())
 			.updatedAt(file.getUpdatedAt())
 			.createdAt(file.getCreatedAt())
