@@ -26,8 +26,8 @@ public class MyFolder extends FileSystemItem {
 	private List<MyFile> files;
 
 	@Builder
-	public MyFolder(UUID uuid, String ownerName, String parentPath, String folderName, FileItemStatus status, String fullPath,
-					MyFolder parentFolder, String accessRoute) {
+	public MyFolder(UUID uuid, String ownerName, String parentPath, String folderName,
+					FileItemStatus status, String fullPath, MyFolder parentFolder, String accessRoute) {
 		this.uuid = uuid;
 		this.ownerName = ownerName;
 		this.parentPath = parentPath;

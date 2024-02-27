@@ -38,6 +38,7 @@ public class FolderService {
 		return folder;
 	}
 
+	@Transactional
 	public FolderResponse createFolder(String ownerName, String folderName, UUID parentFolderUuid) {
 
 		MyFolder parentFolder = getFolderOrRoot(parentFolderUuid, ownerName);
