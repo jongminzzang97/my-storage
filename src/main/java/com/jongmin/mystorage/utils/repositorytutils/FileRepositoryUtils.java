@@ -16,4 +16,8 @@ public class FileRepositoryUtils {
 	public MyFile deleteFile(MyFile myFile) {
 		return myFile.deleteFile();
 	}
+
+	public boolean fileExists(MyFile myFileEntity) {
+		return fileRepository.findByFileName(myFileEntity.getFileName()).isPresent();
+	}
 }

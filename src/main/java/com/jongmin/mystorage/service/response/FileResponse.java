@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import com.jongmin.mystorage.model.MyFile;
-import com.jongmin.mystorage.model.enums.FileItemType;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -12,7 +11,6 @@ import lombok.Getter;
 @Getter
 public class FileResponse {
 	private String fileName;
-	private FileItemType type;
 	private UUID uuid;
 	private String fullPath;
 	private Long size;
@@ -20,11 +18,10 @@ public class FileResponse {
 	private LocalDateTime updatedAt;
 
 	@Builder
-	public FileResponse(String fileName, FileItemType type, UUID uuid, String fullPath, Long size,
+	public FileResponse(String fileName, UUID uuid, String fullPath, Long size,
 		LocalDateTime createdAt,
 		LocalDateTime updatedAt) {
 		this.fileName = fileName;
-		this.type = type;
 		this.uuid = uuid;
 		this.fullPath = fullPath;
 		this.size = size;
@@ -36,7 +33,6 @@ public class FileResponse {
 		return FileResponse.builder()
 			.uuid(file.getUuid())
 			.fileName(file.getFileName())
-			.type(file.getFileItemType())
 			.fullPath(file.getFullPath())
 			.size(file.getSize())
 			.updatedAt(file.getUpdatedAt())

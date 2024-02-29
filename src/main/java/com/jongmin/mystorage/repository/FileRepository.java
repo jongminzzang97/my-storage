@@ -13,4 +13,6 @@ public interface FileRepository extends JpaRepository<MyFile, Long> {
 	Optional<MyFile> findByOwnerNameAndFileName(String ownerName, String filename);
 
 	Optional<MyFile> findByUuid(UUID fileUuid);
+
+	Optional<MyFile> findByFileName(String fileName);
 }
