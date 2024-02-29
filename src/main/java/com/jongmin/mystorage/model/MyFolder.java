@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 
 import com.jongmin.mystorage.model.enums.FileItemStatus;
-import com.jongmin.mystorage.model.enums.FileItemType;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -25,17 +24,42 @@ public class MyFolder extends FileSystemItem {
 	@OneToMany(mappedBy = "parentFolder", fetch = FetchType.LAZY)
 	private List<MyFile> files;
 
+
 	@Builder
 	public MyFolder(UUID uuid, String ownerName, String parentPath, String folderName,
-					FileItemStatus status, String fullPath, MyFolder parentFolder, String accessRoute) {
+					String fullPath, MyFolder parentFolder, String accessRoute, FileItemStatus fileItemStatus) {
 		this.uuid = uuid;
 		this.ownerName = ownerName;
 		this.parentPath = parentPath;
 		this.folderName = folderName;
-		this.fileItemType = FileItemType.FOLDER;
 		this.fullPath = fullPath;
 		this.status = FileItemStatus.SAVED;
 		this.parentFolder = parentFolder;
-		this.accessRoute = ownerName + "/" + uuid;
+		this.accessRoute = accessRoute;
 	}
+
+	public static MyFolder createMyFolderEntity(String ownerName, String folderName, MyFolder parentFolder, UUID uuid) {
+		String parentPath = "";
+		String fullPath = "";
+		if (parentFolder != null) {
+			parentPath = parentFolder.getFullPath();
+			fullPath = parentPath + "/" + folderName;
+		}
+
+		String accessRoute = ownerName + "/" + uuid;
+		FileItemStatus status = FileItemStatus.SAVED;
+
+		return MyFolder.builder()
+			.uuid(uuid).ownerName(ownerName).folderName(folderName)
+			.parentFolder(parentFolder).parentPath(parentPath).fullPath(fullPath)
+			.fileItemStatus(status).accessRoute(accessRoute)
+			.build();
+	}
+
+	public static MyFolder createMyFolderEntity(String ownerName, String folderName, MyFolder parentFolder) {
+		UUID uuid = UUID.randomUUID();
+		return	createMyFolderEntity(ownerName, folderName, parentFolder, uuid);
+	}
+
+
 }

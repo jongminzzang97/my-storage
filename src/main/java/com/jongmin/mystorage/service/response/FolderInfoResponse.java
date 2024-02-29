@@ -5,10 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import com.jongmin.mystorage.controller.api.dto.FileResponseDto;
 import com.jongmin.mystorage.model.MyFile;
 import com.jongmin.mystorage.model.MyFolder;
-import com.jongmin.mystorage.model.enums.FileItemType;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -16,7 +14,6 @@ import lombok.Getter;
 @Getter
 public class FolderInfoResponse {
 	private String folderName;
-	private FileItemType type;
 	private UUID uuid;
 	private String fullPath;
 	private LocalDateTime createdAt;
@@ -25,10 +22,9 @@ public class FolderInfoResponse {
 	private List<FileResponse> files;
 
 	@Builder
-	public FolderInfoResponse(String folderName, FileItemType type, UUID uuid, String fullPath, LocalDateTime createdAt,
+	public FolderInfoResponse(String folderName, UUID uuid, String fullPath, LocalDateTime createdAt,
 		LocalDateTime updatedAt, List<FolderResponse> folders, List<FileResponse> files) {
 		this.folderName = folderName;
-		this.type = type;
 		this.uuid = uuid;
 		this.fullPath = fullPath;
 		this.createdAt = createdAt;
@@ -58,7 +54,6 @@ public class FolderInfoResponse {
 			.createdAt(myFolder.getCreatedAt())
 			.folderName(myFolder.getFolderName())
 			.fullPath(myFolder.getFullPath())
-			.type(myFolder.getFileItemType())
 			.updatedAt(myFolder.getUpdatedAt())
 			.folders(folders)
 			.files(files)

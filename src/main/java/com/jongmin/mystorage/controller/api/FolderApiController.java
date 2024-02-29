@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.jongmin.mystorage.controller.api.dto.FolderUpdateDto;
-import com.jongmin.mystorage.service.folder.FolderService;
 import com.jongmin.mystorage.service.file.FileServiceResponse;
+import com.jongmin.mystorage.service.folder.FolderService;
 import com.jongmin.mystorage.service.response.FolderInfoResponse;
 import com.jongmin.mystorage.service.response.FolderResponse;
 
@@ -52,5 +52,4 @@ public class FolderApiController {
 		@RequestHeader("ownerName") String ownerName) {
 		return null;
 	}
-
 }
