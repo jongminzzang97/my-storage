@@ -57,6 +57,7 @@ public class MyFile extends FileSystemItem {
 			.parentPath(parentPath)
 			.fullPath(fullPath)
 			.accessRoute(accessRoute)
+			.parentFolder(parentFolder)
 			.build();
 	}
 
