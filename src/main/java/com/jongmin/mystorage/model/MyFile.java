@@ -1,6 +1,10 @@
 package com.jongmin.mystorage.model;
 
-import com.jongmin.mystorage.model.enums.MyFileStatus;
+import java.util.UUID;
+
+import org.springframework.web.multipart.MultipartFile;
+
+import com.jongmin.mystorage.model.enums.FileItemStatus;
 
 import jakarta.persistence.Entity;
 import lombok.Builder;
@@ -10,20 +14,60 @@ import lombok.NoArgsConstructor;
 @Entity
 @NoArgsConstructor
 @Getter
-public class MyFile extends BaseEntity {
+public class MyFile extends FileSystemItem {
 
-	private String owner;
-	private String name;
+	private String fileName;
 	private Long size;
-	private MyFileStatus status;
+	private String contentType;
 
 	@Builder
-	private MyFile(String owner, String name, Long size) {
-		this.owner = owner;
-		this.name = name;
+	public MyFile(UUID uuid, String ownerName, Long size, String contentType, MyFolder parentFolder,
+				String fileName, String fullPath, String parentPath, String accessRoute, FileItemStatus status) {
+		this.uuid = uuid;
+		this.ownerName = ownerName;
 		this.size = size;
-		this.status = MyFileStatus.SAVED;
+		this.contentType = contentType;
+		this.parentFolder = parentFolder;
+		this.fileName = fileName;
+		this.fullPath = fullPath;
+		this.parentPath = parentPath;
+		this.status = status;
+		this.accessRoute = accessRoute;
 	}
 
+	public static MyFile createMyFileEntity(MultipartFile multipartFile, String ownerName,
+											MyFolder parentFolder, UUID uuid) {
+		Long size = multipartFile.getSize();
+		String contentType = multipartFile.getContentType();
+		String fileName = multipartFile.getOriginalFilename();
+		FileItemStatus status = FileItemStatus.SAVED;
+
+		String parentPath = parentFolder.getFullPath();
+		String fullPath = parentPath + "/" + fileName;
+		String parentAccessRoute = parentFolder.getAccessRoute();
+		String accessRoute = parentAccessRoute + "/" + uuid + "_"  + fileName;
+
+		return MyFile.builder()
+			.uuid(uuid)
+			.size(size)
+			.ownerName(ownerName)
+			.contentType(contentType)
+			.fileName(fileName)
+			.status(status)
+			.parentPath(parentPath)
+			.fullPath(fullPath)
+			.accessRoute(accessRoute)
+			.parentFolder(parentFolder)
+			.build();
+	}
+
+	public static MyFile createMyFileEntity(MultipartFile multipartFile, String ownerName, MyFolder parentFolder) {
+		return createMyFileEntity(multipartFile, ownerName, parentFolder, UUID.randomUUID());
+	}
+
+	public MyFile deleteFile() {
+		this.status = FileItemStatus.DELETED;
+		return this;
+	}
 }
 

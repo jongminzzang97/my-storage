@@ -1,222 +1,291 @@
 package com.jongmin.mystorage.service;
 
-import static com.jongmin.mystorage.service.request.DefaultFileRequest.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.*;
 
-import java.io.InputStream;
-import java.util.Optional;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
 
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.springframework.core.io.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.jongmin.mystorage.controller.api.dto.UploadFileRequestDto;
 import com.jongmin.mystorage.exception.FileAlreadyExistException;
 import com.jongmin.mystorage.exception.FileNotInDatabaseException;
-import com.jongmin.mystorage.exception.FileNotInFileSystemException;
-import com.jongmin.mystorage.exception.OwnerNameException;
 import com.jongmin.mystorage.model.MyFile;
+import com.jongmin.mystorage.model.MyFolder;
+import com.jongmin.mystorage.model.enums.FileItemStatus;
 import com.jongmin.mystorage.repository.FileRepository;
+import com.jongmin.mystorage.repository.FolderRepository;
 import com.jongmin.mystorage.service.file.FileService;
-import com.jongmin.mystorage.service.file.FileServiceResponse;
-import com.jongmin.mystorage.service.file.FileSystemWrapper;
-import com.jongmin.mystorage.service.request.DefaultFileRequest;
-import com.jongmin.mystorage.service.request.FileUploadRequest;
-import com.jongmin.mystorage.service.response.StringResponse;
+import com.jongmin.mystorage.service.response.FileResponse;
+import com.jongmin.mystorage.utils.ioutils.FileIoUtils;
+import com.jongmin.mystorage.utils.ioutils.FolderIolUtils;
+import com.jongmin.mystorage.utils.repositorytutils.FileRepositoryUtils;
+import com.jongmin.mystorage.utils.repositorytutils.FolderRepositoryUtils;
+
+import jakarta.persistence.EntityManager;
 
 @ExtendWith(SpringExtension.class)
-class FileServiceTest {
-
-	@Mock
-	private FileSystemWrapper fileSystemWrapper;
-
-	@Mock
+@SpringBootTest
+public class FileServiceTest {
+	@Value("${file.storage.baseDir}")
+	private String baseDir;
+	@Autowired
+	private FolderRepository folderRepository;
+	@Autowired
 	private FileRepository fileRepository;
-
-	@InjectMocks
+	@Autowired
+	private FileRepositoryUtils fileRepositoryUtils;
+	@Autowired
+	private FolderRepositoryUtils folderRepositoryUtils;
+	@Autowired
+	private FolderIolUtils folderIolUtils;
+	@Autowired
+	private FileIoUtils fileIoUtils;
+	@Autowired
 	private FileService fileService;
+	@Autowired
+	private EntityManager entityManager;
 
-	@DisplayName("정상적인 흐름의 파일 업로드는 정상적으로 실행되어야 한다.")
-	@Test
-	void uploadFileTest() throws Exception {
-		// given
-		String fileName = "test.txt";
-		String owner = "user1";
-		String fileDir = owner + "_" + fileName;
-		MockMultipartFile mockMultipartFile =
-			new MockMultipartFile("file", fileName, "text/plain", "test data".getBytes());
-		FileUploadRequest request = new FileUploadRequest(fileName, owner, mockMultipartFile);
-
-		given(fileSystemWrapper.fileExists(fileDir)).willReturn(false);
-		given(fileSystemWrapper.copy(any(InputStream.class), eq(fileDir))).willReturn(mockMultipartFile.getSize());
-		given(fileRepository.save(any(MyFile.class))).willReturn(new MyFile());
-
-		// when
-		FileServiceResponse response = fileService.uploadFile(request);
-
-		// then
-		assertNotNull(response);
-		then(fileRepository).should(times(1)).save(any(MyFile.class));
-		then(fileSystemWrapper).should(times(1)).fileExists(fileDir);
-		then(fileSystemWrapper).should(times(1)).copy(any(InputStream.class), eq(fileDir));
+	@AfterEach
+	public void clearFolder() {
+		File file = new File(baseDir);
+		deleteDirectoryAndFiles(file);
 	}
 
-	// 빈 문자열에 대한 검사는 Controller의 @valid에서 검증을 진행하지만
-	// Owner에 '_' 문자가 포함여부는 서비스 단에서 검사한다. -> 서비스의 로직이므로
-	@DisplayName("파일 업로드시 Owner에 '_' 문자가 포함되어 있으면 OwnerNameException을 던져야 한다.")
+	@DisplayName("checkMyFileAndGet : 정상 흐름 파일이 물리적으로 존재하고 파일 정보가 DB에 저장되어 있으면서 요청한 파일의 주인이면 파일 엔티티를 찾아 제공할 수 있다.")
 	@Test
-	void uploadFileWithInvalidOwnerTest() {
+	@Transactional
+	public void checkMyFileAndGet() throws IOException {
 		// given
-		String fileName = "test.txt";
-		String owner = "user_1"; // 유효하지 않은 유저 이름
-		MockMultipartFile mockMultipartFile =
-			new MockMultipartFile("file", fileName, "text/plain", "test data".getBytes());
-		FileUploadRequest request = new FileUploadRequest(fileName, owner, mockMultipartFile);
+		String ownerName = "testOwner";
+		UUID folderUuid = UUID.fromString("12345678-1111-1234-1234-123456789abc");
+		UUID fileUuid = UUID.fromString("12345678-2222-1234-1234-123456789abc");
+
+		Path path = Paths.get("src/test/resources/test.txt");
+		byte[] content = Files.readAllBytes(path);
+		MultipartFile testFile = new MockMultipartFile("test.txt", "test.txt", "text/plain", content);
+
+		MyFolder testFolderEntity = MyFolder.createMyFolderEntity(ownerName, "testFolder", null, folderUuid);
+		folderIolUtils.createPhysicalFolder(ownerName, folderUuid);
+		folderRepository.save(testFolderEntity);
+
+		MyFile testFileEntity = MyFile.createMyFileEntity(testFile, ownerName, testFolderEntity, fileUuid);
+		fileIoUtils.save(testFile, testFileEntity);
+		fileRepository.save(testFileEntity);
+
+		// when
+		MyFile getFile = fileService.checkMyFileAndGet(ownerName, fileUuid);
+
+		// then
+		Assertions.assertThat(getFile.getUuid()).isEqualTo(fileUuid);
+	}
+
+	@DisplayName("checkMyFileAndGet : 파일 정보가 DB에 존재하지 않음 -> FileNotInDatabaseException")
+	@Test
+	@Transactional
+	public void checkMyFileAndGetNotInDB() throws IOException {
+		// given
+		String ownerName = "testOwner";
+		UUID fileUuid = UUID.fromString("12345678-2222-1234-1234-123456789abc");
 
 		// when - then
-		assertThrows(OwnerNameException.class, () -> {
-			fileService.uploadFile(request);
-		});
+		assertThrows(
+			FileNotInDatabaseException.class, () -> fileService.checkMyFileAndGet(ownerName, fileUuid)
+		);
 	}
 
-	@DisplayName("파일이 업로드시 파일 이름이 중복될 경우 FileAlreadyExistsException을 던져야 한다.")
+	@DisplayName("checkMyFileAndGet : DB에 파일이 삭제된 상태로 기록 되어 있음 -> FileNotInDatabaseException")
 	@Test
-	void uploadDuplicateFileNameTest() {
+	@Transactional
+	public void checkMyFileDeleted() throws IOException {
 		// given
-		String fileName = "test.txt";
-		String owner = "user1";
-		String fileDir = owner + "_" + fileName;
-		MockMultipartFile mockMultipartFile =
-			new MockMultipartFile("file", fileName, "text/plain", "test data".getBytes());
-		FileUploadRequest request = new FileUploadRequest(fileName, owner, mockMultipartFile);
+		String ownerName = "testOwner";
+		UUID folderUuid = UUID.fromString("12345678-1111-1234-1234-123456789abc");
+		UUID fileUuid = UUID.fromString("12345678-2222-1234-1234-123456789abc");
+		Path path = Paths.get("src/test/resources/test.txt");
+		byte[] content = Files.readAllBytes(path);
 
-		given(fileSystemWrapper.fileExists(fileDir)).willReturn(true);
+		MultipartFile testFile = new MockMultipartFile("test.txt", "test.txt", "text/plain", content);
+		MyFolder testFolderEntity = MyFolder.createMyFolderEntity(ownerName, "testFolder", null, folderUuid);
+		folderRepository.save(testFolderEntity);
+
+		MyFile testFileEntity = MyFile.createMyFileEntity(testFile, ownerName, testFolderEntity, fileUuid);
+		fileRepository.save(testFileEntity);
+
+		// 삭제 진행
+		fileRepositoryUtils.deleteFile(testFileEntity);
 
 		// when - then
-		assertThrows(FileAlreadyExistException.class, () -> {
-			fileService.uploadFile(request);
-		});
+		RuntimeException exception = assertThrows(
+			RuntimeException.class, () -> fileService.checkMyFileAndGet(ownerName, fileUuid)
+		);
+		Assertions.assertThat(exception.getMessage()).isEqualTo("파일이 삭제되어 있는 상태입니다.");
 	}
 
-	@DisplayName("파일 다운로드시 문제가 없는 경우 resource를 반환해야 한다.")
+	@DisplayName("checkMyFileAndGet : 파일이 디스크에 존재 하지 않음 -> RuntimeException(\"파일이 디스크 상에 존재하지 않습니다.\")")
 	@Test
-	void downloadFile() {
+	@Transactional
+	public void checkMyFileNotInDisk() throws IOException {
 		// given
-		String fileName = "test.txt";
-		String owner = "user1";
-		DefaultFileRequest request = defaultFileRequestFromFileNameAndOwner(fileName, owner);
-		MyFile myFile = new MyFile();
-		String fileDir = owner + "_" + fileName;
-		Resource mockResource = mock(Resource.class);
+		String ownerName = "testOwner";
+		UUID folderUuid = UUID.fromString("12345678-1111-1234-1234-123456789abc");
+		UUID fileUuid = UUID.fromString("12345678-2222-1234-1234-123456789abc");
+		Path path = Paths.get("src/test/resources/test.txt");
+		byte[] content = Files.readAllBytes(path);
+		MultipartFile testFile = new MockMultipartFile("test.txt", "test.txt", "text/plain", content);
 
-		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.of(myFile));
-		given(fileSystemWrapper.fileNotExists(fileDir)).willReturn(false);
-		given(fileSystemWrapper.fileDirToResource(fileDir)).willReturn(mockResource);
+		MyFolder testFolderEntity = MyFolder.createMyFolderEntity(ownerName, "testFolder", null, folderUuid);
+		folderRepository.save(testFolderEntity);
+		MyFile testFileEntity = MyFile.createMyFileEntity(testFile, ownerName, testFolderEntity, fileUuid);
+		fileRepository.save(testFileEntity);
+
+		// when - then
+		RuntimeException exception = assertThrows(
+			RuntimeException.class, () -> fileService.checkMyFileAndGet(ownerName, fileUuid)
+		);
+		Assertions.assertThat(exception.getMessage()).isEqualTo("파일이 디스크 상에 존재하지 않습니다.");
+	}
+
+	@DisplayName("uploadFile : 정상 흐름")
+	@Test
+	@Transactional
+	public void uploadFile() throws IOException {
+		Path path = Paths.get("src/test/resources/test.txt");
+		byte[] content = Files.readAllBytes(path);
+
+		UUID folderUuid = UUID.fromString("12345678-1111-1234-1234-123456789abc");
+		String ownerName = "testOwner";
+
+		MyFolder testFolderEntity = MyFolder.createMyFolderEntity(ownerName, "testFolder", null, folderUuid);
+		folderIolUtils.createPhysicalFolder(ownerName, folderUuid);
+		folderRepository.save(testFolderEntity);
+
+		MockMultipartFile mockFile = new MockMultipartFile("test.txt", "test.txt", "text/plain", content);
+		UploadFileRequestDto requestDto = new UploadFileRequestDto(mockFile, folderUuid);
 
 		// when
-		Resource result = fileService.downloadFile(request);
+		FileResponse fileResponse = fileService.uploadFile("testOwner", requestDto);
 
 		// then
-		assertEquals(mockResource, result);
+		Assertions.assertThat(fileResponse.getFileName()).isEqualTo(mockFile.getOriginalFilename());
+		Assertions.assertThat(fileResponse.getSize()).isEqualTo(requestDto.getMultipartFile().getSize());
+		Assertions.assertThat(fileResponse.getFullPath())
+			.isEqualTo(testFolderEntity.getFullPath() + "/" + mockFile.getOriginalFilename());
 	}
 
-	@DisplayName("파일 다운로드시 파일 정보가 DB에 존재하지 않을 때는 FileNotFoundException을 던져야 한다.")
+	@DisplayName("uploadFile : 폴더 내 동일한 파일 이름 존재 -> FileAlreadyExistException ")
 	@Test
-	void downloadFileWhenFileNotInDatabase() {
+	@Transactional
+	public void uploadFileDuplicateNameFile() throws IOException {
 		// given
-		String fileName = "test.txt";
-		String owner = "user1";
-		DefaultFileRequest request = defaultFileRequestFromFileNameAndOwner(fileName, owner);
+		Path path = Paths.get("src/test/resources/test.txt");
+		byte[] content = Files.readAllBytes(path);
 
+		UUID folderUuid = UUID.fromString("12345678-1111-1234-1234-123456789abc");
+		String ownerName = "testOwner";
 
-		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.empty());
+		MyFolder testFolderEntity = MyFolder.createMyFolderEntity(ownerName, "testFolder", null, folderUuid);
+		folderIolUtils.createPhysicalFolder(ownerName, folderUuid);
+		folderRepository.save(testFolderEntity);
 
-		// when-then
-		Exception exception = assertThrows(FileNotInDatabaseException.class, () -> {
-			fileService.downloadFile(request);
-		});
-		assertEquals("파일에 대한 정보가 DB에 존재하지 않습니다.", exception.getMessage());
+		MockMultipartFile mockFile = new MockMultipartFile("test.txt", "test.txt", "text/plain", content);
+		UploadFileRequestDto requestDto = new UploadFileRequestDto(mockFile, folderUuid);
+
+		FileResponse fileResponse = fileService.uploadFile("testOwner", requestDto);
+
+		MockMultipartFile mockFile2 = new MockMultipartFile("test.txt", "test.txt", "text/plain", new byte[] {123});
+		UploadFileRequestDto requestDto2 = new UploadFileRequestDto(mockFile2, folderUuid);
+
+		entityManager.clear();
+		// when - then
+		FileAlreadyExistException exception = assertThrows(
+			FileAlreadyExistException.class, () -> fileService.uploadFile("testOwner", requestDto2)
+		);
+		Assertions.assertThat(exception.getMessage()).isEqualTo("이미 동일한 이름의 파일이 존재합니다.");
 	}
 
-	@DisplayName("파일 다운로드시 파일이 파일 시스템에 존재하지 않을 때는 FileNotFoundException을 던져야 한다.")
+	@DisplayName("readFile : 정상 흐름")
 	@Test
-	void downloadFileWhenFileNotInFileSystem() {
+	@Transactional
+	public void readFile() throws IOException {
 		// given
-		String fileName = "test.txt";
-		String owner = "user1";
-		DefaultFileRequest request = defaultFileRequestFromFileNameAndOwner(fileName, owner);
-		String fileDir = owner + "_" + fileName;
+		String ownerName = "testOwner";
+		UUID folderUuid = UUID.fromString("12345678-1111-1234-1234-123456789abc");
+		UUID fileUuid = UUID.fromString("12345678-2222-1234-1234-123456789abc");
 
-		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.of(new MyFile()));
-		given(fileSystemWrapper.fileNotExists(fileDir)).willReturn(true);
+		Path path = Paths.get("src/test/resources/test.txt");
+		byte[] content = Files.readAllBytes(path);
+		MultipartFile testFile = new MockMultipartFile("test.txt", "test.txt", "text/plain", content);
 
-		// when-then
-		Exception exception = assertThrows(FileNotInFileSystemException.class, () -> {
-			fileService.downloadFile(request);
-		});
-		assertEquals("다운로드 하려는 파일이 존재하지 않습니다.", exception.getMessage());
-	}
+		MyFolder testFolderEntity = MyFolder.createMyFolderEntity(ownerName, "testFolder", null, folderUuid);
+		folderIolUtils.createPhysicalFolder(ownerName, folderUuid);
+		folderRepository.save(testFolderEntity);
 
-	@DisplayName("파일 삭제 요청이 정상적으로 처리된 경우 \"파일이 성공적으로 삭제되었습니다.\"를 반환해야한다.")
-	@Test
-	void deleteFile() {
-		// given
-		String fileName = "test.txt";
-		String owner = "user1";
-		DefaultFileRequest request = defaultFileRequestFromFileNameAndOwner(fileName, owner);
-		MyFile myFile = new MyFile();
-		String fileDir = owner + "_" + fileName;
-		Resource mockResource = mock(Resource.class);
-
-		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.of(myFile));
-		given(fileSystemWrapper.fileNotExists(fileDir)).willReturn(false);
-		given(fileSystemWrapper.fileDirToResource(fileDir)).willReturn(mockResource);
+		MyFile testFileEntity = MyFile.createMyFileEntity(testFile, ownerName, testFolderEntity, fileUuid);
+		fileIoUtils.save(testFile, testFileEntity);
+		MyFile fileEntity = fileRepository.save(testFileEntity);
 
 		// when
-		StringResponse stringResponse = fileService.deleteFile(request);
+		FileResponse fileResponse = fileService.readFile(ownerName, fileUuid);
 
 		// then
-		assertEquals(stringResponse.getResponse(), "파일이 성공적으로 삭제되었습니다.");
+		Assertions.assertThat(fileResponse.getFileName()).isEqualTo(fileEntity.getFileName());
+		Assertions.assertThat(fileResponse.getSize()).isEqualTo(fileEntity.getSize());
+		Assertions.assertThat(fileResponse.getFullPath()).isEqualTo(fileEntity.getFullPath());
+		Assertions.assertThat(fileResponse.getUuid()).isEqualTo(fileEntity.getUuid());
 	}
 
-	@DisplayName("파일 삭제시 파일 정보가 DB에 존재하지 않을 때는 FileNotFoundException을 던져야 한다.")
+	@DisplayName("deleteFile : 정상 흐름")
 	@Test
-	void deleteFileWhenFileNotInDatabase() {
+	@Transactional
+	public void deleteFile() throws IOException {
 		// given
-		String fileName = "test.txt";
-		String owner = "user1";
-		DefaultFileRequest request = defaultFileRequestFromFileNameAndOwner(fileName, owner);
+		String ownerName = "testOwner";
+		UUID folderUuid = UUID.fromString("12345678-1111-1234-1234-123456789abc");
+		UUID fileUuid = UUID.fromString("12345678-2222-1234-1234-123456789abc");
 
-		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.empty());
+		Path path = Paths.get("src/test/resources/test.txt");
+		byte[] content = Files.readAllBytes(path);
+		MultipartFile testFile = new MockMultipartFile("test.txt", "test.txt", "text/plain", content);
 
-		// when-then
-		Exception exception = assertThrows(FileNotInDatabaseException.class, () -> {
-			fileService.deleteFile(request);
-		});
-		assertEquals("파일에 대한 정보가 DB에 존재하지 않습니다.", exception.getMessage());
+		MyFolder testFolderEntity = MyFolder.createMyFolderEntity(ownerName, "testFolder", null, folderUuid);
+		folderIolUtils.createPhysicalFolder(ownerName, folderUuid);
+		folderRepository.save(testFolderEntity);
+
+		MyFile testFileEntity = MyFile.createMyFileEntity(testFile, ownerName, testFolderEntity, fileUuid);
+		fileIoUtils.save(testFile, testFileEntity);
+		MyFile fileEntity = fileRepository.save(testFileEntity);
+
+		// when
+		fileService.deleteFile(ownerName, fileUuid);
+
+		// then
+		MyFile deletedFile = fileRepository.findByUuid(fileUuid).get();
+		Assertions.assertThat(deletedFile.getStatus()).isEqualTo(FileItemStatus.DELETED);
 	}
 
-	@DisplayName("파일 삭제시 파일이 파일 시스템에 존재하지 않을 때는 FileNotFoundException을 던져야 한다.")
-	@Test
-	void deleteFileWhenFileNotInFileSystem() {
-		// given
-		String fileName = "test.txt";
-		String owner = "user1";
-		DefaultFileRequest request = defaultFileRequestFromFileNameAndOwner(fileName, owner);
-		String fileDir = owner + "_" + fileName;
-
-		given(fileRepository.findByOwnerAndName(owner, fileName)).willReturn(Optional.of(new MyFile()));
-		given(fileSystemWrapper.fileNotExists(fileDir)).willReturn(true);
-
-		// when-then
-		Exception exception = assertThrows(FileNotInFileSystemException.class, () -> {
-			fileService.deleteFile(request);
-		});
-		assertEquals("삭제하려는 파일이 존재하지 않습니다.", exception.getMessage());
+	private void deleteDirectoryAndFiles(File targetFolder) {
+		File[] files = targetFolder.listFiles();
+		for (File file : files) {
+			if (file.isDirectory()) {
+				deleteDirectoryAndFiles(file);
+			}
+			file.delete();
+		}
 	}
 }
