@@ -25,7 +25,7 @@ public class MyFile extends FileSystemItem {
 
 	@Builder
 	public MyFile(UUID uuid, String ownerName, Long size, String contentType, MyFolder parentFolder,
-				String fileName, String fullPath, String parentPath, String accessRoute, FileItemStatus status) {
+		String fileName, String fullPath, String parentPath, String accessRoute, FileItemStatus status) {
 		this.uuid = uuid;
 		this.ownerName = ownerName;
 		this.size = size;
@@ -39,7 +39,7 @@ public class MyFile extends FileSystemItem {
 	}
 
 	public static MyFile createMyFileEntity(MultipartFile multipartFile, String ownerName,
-											MyFolder parentFolder, UUID uuid) {
+		MyFolder parentFolder, UUID uuid) {
 		Long size = multipartFile.getSize();
 		String contentType = multipartFile.getContentType();
 		String fileName = multipartFile.getOriginalFilename();
@@ -47,7 +47,7 @@ public class MyFile extends FileSystemItem {
 
 		String parentPath = parentFolder.getFullPath();
 		String fullPath = parentPath + "/" + fileName;
-		String accessRoute = ownerName + "/" + uuid + "_"  + fileName;
+		String accessRoute = ownerName + "/" + uuid + "_" + fileName;
 
 		return MyFile.builder()
 			.uuid(uuid)
@@ -69,6 +69,13 @@ public class MyFile extends FileSystemItem {
 
 	public MyFile deleteFile() {
 		this.status = FileItemStatus.DELETED;
+		return this;
+	}
+
+	public MyFile move(MyFolder parentFolder) {
+		this.parentFolder = parentFolder;
+		this.parentPath = parentFolder.getFullPath();
+		this.fullPath = parentPath + "/" + fileName;
 		return this;
 	}
 }

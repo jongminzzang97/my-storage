@@ -1,6 +1,5 @@
 package com.jongmin.mystorage.service.file;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.core.io.Resource;
@@ -8,11 +7,9 @@ import org.springframework.stereotype.Service;
 
 import com.jongmin.mystorage.controller.api.dto.UploadFileRequestDto;
 import com.jongmin.mystorage.exception.FileAlreadyExistException;
-import com.jongmin.mystorage.exception.FileNotInDatabaseException;
 import com.jongmin.mystorage.exception.FileNotInFileSystemException;
 import com.jongmin.mystorage.model.MyFile;
 import com.jongmin.mystorage.model.MyFolder;
-import com.jongmin.mystorage.model.enums.FileItemStatus;
 import com.jongmin.mystorage.repository.FileRepository;
 import com.jongmin.mystorage.service.response.FileResponse;
 import com.jongmin.mystorage.service.response.StringResponse;
@@ -37,7 +34,7 @@ public class FileService {
 	public FileResponse uploadFile(String ownerName, UploadFileRequestDto requestDto) {
 		MyFolder parentFolder = folderRepositoryUtils.getFolderByUuid(requestDto.getFolderUuid());
 		MyFile myFileEntity = MyFile.createMyFileEntity(requestDto.getMultipartFile(), ownerName, parentFolder);
-		if (fileRepositoryUtils.sameFileNameExistsInFolder(myFileEntity)) {
+		if (fileRepositoryUtils.sameFileNameExistsInFolder(myFileEntity, parentFolder)) {
 			throw new FileAlreadyExistException("이미 동일한 이름의 파일이 존재합니다.");
 		}
 
@@ -74,5 +71,20 @@ public class FileService {
 			throw new FileNotInFileSystemException("파일이 디스크 상에 존재하지 않습니다.");
 		}
 		return fileIoUtils.fileToResource(checkedFile);
+	}
+
+	@Transactional
+	public FileResponse moveFile(String ownerName, UUID fileUuid, UUID destFolderUuid) {
+		MyFile file = fileRepositoryUtils.getFileByUuidWithSavedStatus(ownerName, fileUuid);
+		System.out.println(destFolderUuid);
+		MyFolder destFolder = folderRepositoryUtils.getFolderByUuidWithSavedStatus(ownerName, destFolderUuid);
+
+		if (fileRepositoryUtils.sameFileNameExistsInFolder(file, destFolder)) {
+			throw new FileAlreadyExistException("옮기려는 폴더에 동일한 이름의 파일이 존재해 이동이 불가능 합니다.");
+		} else {
+			file.move(destFolder);
+		}
+
+		return FileResponse.fromMyFile(file);
 	}
 }

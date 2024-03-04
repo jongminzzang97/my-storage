@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.jongmin.mystorage.exception.FileNotInDatabaseException;
 import com.jongmin.mystorage.model.MyFile;
+import com.jongmin.mystorage.model.MyFolder;
 import com.jongmin.mystorage.model.enums.FileItemStatus;
 import com.jongmin.mystorage.repository.FileRepository;
 
@@ -36,11 +37,11 @@ public class FileRepositoryUtils {
 		return myFile;
 	}
 
-	public boolean sameFileNameExistsInFolder(MyFile myFileEntity) {
+	public boolean sameFileNameExistsInFolder(MyFile myFileEntity, MyFolder myFolder) {
 		return fileRepository.findByOwnerNameAndFileNameAndParentFolderIdAndStatus(
 			myFileEntity.getOwnerName(),
 			myFileEntity.getFileName(),
-			myFileEntity.getParentFolder().getId(),
+			myFolder.getId(),
 			FileItemStatus.SAVED
 		).isPresent();
 	}
