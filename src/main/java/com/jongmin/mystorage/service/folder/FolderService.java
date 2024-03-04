@@ -11,9 +11,12 @@ import com.jongmin.mystorage.exception.FileNotInFileSystemException;
 import com.jongmin.mystorage.model.MyFile;
 import com.jongmin.mystorage.model.MyFolder;
 import com.jongmin.mystorage.model.enums.FileItemStatus;
+import com.jongmin.mystorage.repository.FileRepository;
 import com.jongmin.mystorage.repository.FolderRepository;
 import com.jongmin.mystorage.service.response.FolderInfoResponse;
 import com.jongmin.mystorage.service.response.FolderResponse;
+import com.jongmin.mystorage.service.response.StringResponse;
+import com.jongmin.mystorage.utils.ioutils.FileIoUtils;
 import com.jongmin.mystorage.utils.ioutils.FolderIolUtils;
 import com.jongmin.mystorage.utils.repositorytutils.FolderRepositoryUtils;
 
@@ -28,7 +31,10 @@ public class FolderService {
 
 	private final FolderRepository folderRepository;
 	private final FolderRepositoryUtils folderRepositoryUtils;
-	private final FolderIolUtils folderIolUtils;
+
+	private final FileRepository fileRepository;
+	private final FileIoUtils fileIoUtils;
+
 
 	public MyFolder checkMyFolderAndGet(String ownerName, UUID folderUuid) {
 		Optional<MyFolder> optional = folderRepository.findByUuid(folderUuid);
@@ -82,4 +88,30 @@ public class FolderService {
 
 		return FolderInfoResponse.fromMyFolder(folder);
 	}
+
+	@Transactional
+	public StringResponse deleteFolder(String ownerName, UUID folderId) {
+
+		MyFolder myFolder = checkMyFolderAndGet(ownerName, folderId);
+		String fullPath = myFolder.getFullPath();
+
+		List<MyFile> files = fileRepository.findByOwnerNameAndFullPathStartingWith(ownerName, fullPath);
+		files.stream().forEach(MyFile::deleteFile);
+		files.stream().forEach(fileIoUtils::deleteFile);
+
+		List<MyFolder> folders = folderRepository.findByOwnerNameAndFullPathStartingWith(ownerName, fullPath);
+		folders.stream().forEach(MyFolder::deleteFolder);
+
+		return new StringResponse("폴더 삭제가 완료되었습니다");
+	}
+
+	public void deleteFolder_v2(String ownerName, UUID folderId) {
+
+		MyFolder myFolder = checkMyFolderAndGet(ownerName, folderId);
+		String fullPath = myFolder.getFullPath();
+
+		// DB에 접근하는 쿼리의 수를 줄일 수 있다.
+
+	}
+
 }

@@ -1,5 +1,6 @@
 package com.jongmin.mystorage.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,4 +18,6 @@ public interface FileRepository extends JpaRepository<MyFile, Long> {
 	Optional<MyFile> findByUuid(UUID fileUuid);
 
 	Optional<MyFile> findByFileName(String fileName);
+
+	List<MyFile> findByOwnerNameAndFullPathStartingWith(String ownerName, String fullPath);
 }

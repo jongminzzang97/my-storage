@@ -1,5 +1,6 @@
 package com.jongmin.mystorage.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,4 +16,6 @@ public interface FolderRepository extends JpaRepository<MyFolder, Long> {
 	Optional<MyFolder> findByFullPath(String fullPath);
 
 	Optional<MyFolder> findByOwnerNameAndFullPath(String ownerName, String fullPath);
+
+	List<MyFolder> findByOwnerNameAndFullPathStartingWith(String ownerName, String fullPath);
 }

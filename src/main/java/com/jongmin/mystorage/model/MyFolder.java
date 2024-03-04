@@ -59,5 +59,8 @@ public class MyFolder extends FileSystemItem {
 		return	createMyFolderEntity(ownerName, folderName, parentFolder, uuid);
 	}
 
-
+	public MyFolder deleteFolder() {
+		this.status = FileItemStatus.DELETED;
+		return this;
+	}
 }
