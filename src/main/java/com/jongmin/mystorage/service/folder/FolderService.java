@@ -43,9 +43,6 @@ public class FolderService {
 		if (!myFolder.getOwnerName().equals(ownerName)) {
 			throw new RuntimeException("본인 소유의 폴더가 아닙니다.");
 		}
-		if (folderIolUtils.folderNotExists(myFolder)) {
-			throw new FileNotInFileSystemException("폴더가 디스크 상에 존재하지 않습니다.");
-		}
 
 		return myFolder;
 	}
@@ -69,7 +66,6 @@ public class FolderService {
 		}
 
 		MyFolder createdFolder = MyFolder.createMyFolderEntity(ownerName, folderName, parentFolder);
-		folderIolUtils.createPhysicalFolder(ownerName, createdFolder.getUuid());
 		folderRepository.save(createdFolder);
 
 		return FolderResponse.fromMyFolder(createdFolder);

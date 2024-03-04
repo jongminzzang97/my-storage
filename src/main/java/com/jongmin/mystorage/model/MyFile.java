@@ -20,6 +20,9 @@ public class MyFile extends FileSystemItem {
 	private Long size;
 	private String contentType;
 
+	// 실제 파일에 접근하기 위한 경로
+	private String accessRoute;
+
 	@Builder
 	public MyFile(UUID uuid, String ownerName, Long size, String contentType, MyFolder parentFolder,
 				String fileName, String fullPath, String parentPath, String accessRoute, FileItemStatus status) {
@@ -44,8 +47,7 @@ public class MyFile extends FileSystemItem {
 
 		String parentPath = parentFolder.getFullPath();
 		String fullPath = parentPath + "/" + fileName;
-		String parentAccessRoute = parentFolder.getAccessRoute();
-		String accessRoute = parentAccessRoute + "/" + uuid + "_"  + fileName;
+		String accessRoute = ownerName + "/" + uuid + "_"  + fileName;
 
 		return MyFile.builder()
 			.uuid(uuid)

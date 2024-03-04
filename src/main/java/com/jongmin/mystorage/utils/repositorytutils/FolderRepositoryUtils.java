@@ -20,15 +20,7 @@ public class FolderRepositoryUtils {
 	private final FolderIolUtils folderIolUtils;
 
 	private MyFolder createRootFolder(String ownerName) {
-		// createMyFolderEntity -> root에서는 사용하지 말자.
-		// MyFolder root = MyFolder.builder()
-		// 	.folderName("")
-		// 	.fullPath("")
-		// 	.uuid(UUID.randomUUID())
-		// 	.ownerName(ownerName)
-		// 	.build();
 		MyFolder root = MyFolder.createMyFolderEntity(ownerName, "", null);
-		folderIolUtils.createPhysicalFolder(ownerName, root.getUuid());
 		folderRepository.save(root);
 		return root;
 	}

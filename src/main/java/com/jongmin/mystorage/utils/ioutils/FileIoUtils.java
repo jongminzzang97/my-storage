@@ -1,5 +1,6 @@
 package com.jongmin.mystorage.utils.ioutils;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.CopyOption;
@@ -54,6 +55,11 @@ public class FileIoUtils {
 	}
 
 	public long save(MultipartFile multipartFile, MyFile myFile, CopyOption... options) {
+		File directory = new File(baseDir + "/" + myFile.getOwnerName());
+		if (!directory.exists()) {
+			directory.mkdirs();
+		}
+
 		String accessRoute = myFile.getAccessRoute();
 		Path path = Paths.get(baseDir + accessRoute);
 		try (InputStream inputStream = multipartFile.getInputStream()) {
