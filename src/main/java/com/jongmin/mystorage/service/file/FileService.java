@@ -34,25 +34,6 @@ public class FileService {
 	private final FileRepositoryUtils fileRepositoryUtils;
 	private final FileIoUtils fileIoUtils;
 
-	public MyFile checkMyFileAndGet(String ownerName, UUID fileUuid) {
-		Optional<MyFile> optional = fileRepository.findByUuid(fileUuid);
-		if (optional.isEmpty()) {
-			throw new FileNotInDatabaseException("파일에 대한 정보가 DB에 존재하지 않습니다.");
-		}
-		MyFile myFile = optional.get();
-		if (myFile.getStatus() != FileItemStatus.SAVED) {
-			throw new RuntimeException("파일이 삭제되어 있는 상태입니다.");
-		}
-		if (!myFile.getOwnerName().equals(ownerName)) {
-			throw new RuntimeException("본인 소유의 파일이 아닙니다.");
-		}
-		if (fileIoUtils.fileNotExists(myFile)) {
-			throw new FileNotInFileSystemException("파일이 디스크 상에 존재하지 않습니다.");
-		}
-
-		return myFile;
-	}
-
 	public FileResponse uploadFile(String ownerName, UploadFileRequestDto requestDto) {
 		MyFolder parentFolder = folderRepositoryUtils.getFolderByUuid(requestDto.getFolderUuid());
 		MyFile myFileEntity = MyFile.createMyFileEntity(requestDto.getMultipartFile(), ownerName, parentFolder);
@@ -66,7 +47,7 @@ public class FileService {
 	}
 
 	public FileResponse readFile(String ownerName, UUID fileUuid) {
-		MyFile checkedFile = checkMyFileAndGet(ownerName, fileUuid);
+		MyFile checkedFile = fileRepositoryUtils.getFileByUuidWithSavedStatus(ownerName, fileUuid);
 		return FileResponse.fromMyFile(checkedFile);
 	}
 
@@ -74,17 +55,24 @@ public class FileService {
 		// 파일을 삭제를 위한 Lock을 얻고,
 		// 파일 상태를 확인하고 삭제하는 과정이 atomic하게 진행될 수 있도록 추후에 수정이 필요합니다.
 		// 파일을 다운로드 받는 사용자가 있는 경우 역시 고려되어야 합니다.
-		MyFile checkedFile = checkMyFileAndGet(ownerName, fileUuid);
+		MyFile checkedFile = fileRepositoryUtils.getFileByUuidWithSavedStatus(ownerName, fileUuid);
 		fileIoUtils.deleteFile(checkedFile);
+
+		if (fileIoUtils.fileNotExists(checkedFile)) {
+			throw new FileNotInFileSystemException("파일이 디스크 상에 존재하지 않습니다.");
+		}
 		fileRepositoryUtils.deleteFile(checkedFile);
 
-		return new StringResponse("요청한 파일에 대한 삭제가성공적으로 진행되었습니다.");
+		return new StringResponse("요청한 파일에 대한 삭제가 성공적으로 진행되었습니다.");
 	}
 
 	public Resource downloadFile(String ownerName, UUID fileUuid) {
 		// 파일을 다운로드를 위한 Lock을 얻고,
 		// 파일 상태를 확인하고 다운로드 받는 과정이 atomic하게 진행될 수 있도록 추후에 수정이 필요합니다.
-		MyFile checkedFile = checkMyFileAndGet(ownerName, fileUuid);
+		MyFile checkedFile = fileRepositoryUtils.getFileByUuidWithSavedStatus(ownerName, fileUuid);
+		if (fileIoUtils.fileNotExists(checkedFile)) {
+			throw new FileNotInFileSystemException("파일이 디스크 상에 존재하지 않습니다.");
+		}
 		return fileIoUtils.fileToResource(checkedFile);
 	}
 }

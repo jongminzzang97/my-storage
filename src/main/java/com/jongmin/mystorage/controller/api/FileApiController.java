@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.jongmin.mystorage.controller.api.dto.UploadFileRequestDto;
 import com.jongmin.mystorage.service.file.FileService;
 import com.jongmin.mystorage.service.response.FileResponse;
+import com.jongmin.mystorage.service.response.StringResponse;
 
 import lombok.AllArgsConstructor;
 
@@ -39,9 +40,9 @@ public class FileApiController {
 	}
 
 	@DeleteMapping("/api/files/{fileUuid}")
-	public void deleteFile(@RequestHeader("ownerName") String ownerName,
+	public StringResponse deleteFile(@RequestHeader("ownerName") String ownerName,
 		@PathVariable(name = "fileUuid", required = true) UUID fileUuid) {
-		fileService.deleteFile(ownerName, fileUuid);
+		return fileService.deleteFile(ownerName, fileUuid);
 	}
 
 	@GetMapping("/api/files/{fileUuid}/download")

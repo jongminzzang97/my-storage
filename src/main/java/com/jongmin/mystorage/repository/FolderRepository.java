@@ -8,10 +8,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.jongmin.mystorage.model.MyFolder;
+import com.jongmin.mystorage.model.enums.FileItemStatus;
 
 @Repository
 public interface FolderRepository extends JpaRepository<MyFolder, Long> {
 	Optional<MyFolder> findByUuid(UUID uuid);
+
+	Optional<MyFolder> findByUuidAndStatus(UUID uuid, FileItemStatus status);
 
 	Optional<MyFolder> findByFullPath(String fullPath);
 
