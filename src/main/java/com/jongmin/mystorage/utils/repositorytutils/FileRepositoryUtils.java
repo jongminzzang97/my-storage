@@ -3,6 +3,7 @@ package com.jongmin.mystorage.utils.repositorytutils;
 import org.springframework.stereotype.Component;
 
 import com.jongmin.mystorage.model.MyFile;
+import com.jongmin.mystorage.model.enums.FileItemStatus;
 import com.jongmin.mystorage.repository.FileRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,12 @@ public class FileRepositoryUtils {
 		return myFile.deleteFile();
 	}
 
-	public boolean fileExists(MyFile myFileEntity) {
-		return fileRepository.findByFileName(myFileEntity.getFileName()).isPresent();
+	public boolean sameFileNameExistsInFolder(MyFile myFileEntity) {
+		return fileRepository.findByOwnerNameAndFileNameAndParentFolderIdAndStatus(
+			myFileEntity.getOwnerName(),
+			myFileEntity.getFileName(),
+			myFileEntity.getParentFolder().getId(),
+			FileItemStatus.SAVED
+		).isPresent();
 	}
 }

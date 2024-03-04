@@ -56,7 +56,7 @@ public class FileService {
 	public FileResponse uploadFile(String ownerName, UploadFileRequestDto requestDto) {
 		MyFolder parentFolder = folderRepositoryUtils.getFolderByUuid(requestDto.getFolderUuid());
 		MyFile myFileEntity = MyFile.createMyFileEntity(requestDto.getMultipartFile(), ownerName, parentFolder);
-		if (fileRepositoryUtils.fileExists(myFileEntity)) {
+		if (fileRepositoryUtils.sameFileNameExistsInFolder(myFileEntity)) {
 			throw new FileAlreadyExistException("이미 동일한 이름의 파일이 존재합니다.");
 		}
 

@@ -7,10 +7,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.jongmin.mystorage.model.MyFile;
+import com.jongmin.mystorage.model.enums.FileItemStatus;
 
 @Repository
 public interface FileRepository extends JpaRepository<MyFile, Long> {
-	Optional<MyFile> findByOwnerNameAndFileName(String ownerName, String filename);
+	Optional<MyFile> findByOwnerNameAndFileNameAndParentFolderIdAndStatus(String ownerName,
+		String filename, Long id, FileItemStatus status);
 
 	Optional<MyFile> findByUuid(UUID fileUuid);
 
