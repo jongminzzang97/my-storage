@@ -67,100 +67,6 @@ public class FileServiceTest {
 		deleteDirectoryAndFiles(file);
 	}
 
-	@DisplayName("checkMyFileAndGet : 정상 흐름 파일이 물리적으로 존재하고 파일 정보가 DB에 저장되어 있으면서 요청한 파일의 주인이면 파일 엔티티를 찾아 제공할 수 있다.")
-	@Test
-	@Transactional
-	public void checkMyFileAndGet() throws IOException {
-		// given
-		String ownerName = "testOwner";
-		UUID folderUuid = UUID.fromString("12345678-1111-1234-1234-123456789abc");
-		UUID fileUuid = UUID.fromString("12345678-2222-1234-1234-123456789abc");
-
-		Path path = Paths.get("src/test/resources/test.txt");
-		byte[] content = Files.readAllBytes(path);
-		MultipartFile testFile = new MockMultipartFile("test.txt", "test.txt", "text/plain", content);
-
-		MyFolder testFolderEntity = MyFolder.createMyFolderEntity(ownerName, "testFolder", null, folderUuid);
-		folderIolUtils.createPhysicalFolder(ownerName, folderUuid);
-		folderRepository.save(testFolderEntity);
-
-		MyFile testFileEntity = MyFile.createMyFileEntity(testFile, ownerName, testFolderEntity, fileUuid);
-		fileIoUtils.save(testFile, testFileEntity);
-		fileRepository.save(testFileEntity);
-
-		// when
-		MyFile getFile = fileService.checkMyFileAndGet(ownerName, fileUuid);
-
-		// then
-		Assertions.assertThat(getFile.getUuid()).isEqualTo(fileUuid);
-	}
-
-	@DisplayName("checkMyFileAndGet : 파일 정보가 DB에 존재하지 않음 -> FileNotInDatabaseException")
-	@Test
-	@Transactional
-	public void checkMyFileAndGetNotInDB() throws IOException {
-		// given
-		String ownerName = "testOwner";
-		UUID fileUuid = UUID.fromString("12345678-2222-1234-1234-123456789abc");
-
-		// when - then
-		assertThrows(
-			FileNotInDatabaseException.class, () -> fileService.checkMyFileAndGet(ownerName, fileUuid)
-		);
-	}
-
-	@DisplayName("checkMyFileAndGet : DB에 파일이 삭제된 상태로 기록 되어 있음 -> FileNotInDatabaseException")
-	@Test
-	@Transactional
-	public void checkMyFileDeleted() throws IOException {
-		// given
-		String ownerName = "testOwner";
-		UUID folderUuid = UUID.fromString("12345678-1111-1234-1234-123456789abc");
-		UUID fileUuid = UUID.fromString("12345678-2222-1234-1234-123456789abc");
-		Path path = Paths.get("src/test/resources/test.txt");
-		byte[] content = Files.readAllBytes(path);
-
-		MultipartFile testFile = new MockMultipartFile("test.txt", "test.txt", "text/plain", content);
-		MyFolder testFolderEntity = MyFolder.createMyFolderEntity(ownerName, "testFolder", null, folderUuid);
-		folderRepository.save(testFolderEntity);
-
-		MyFile testFileEntity = MyFile.createMyFileEntity(testFile, ownerName, testFolderEntity, fileUuid);
-		fileRepository.save(testFileEntity);
-
-		// 삭제 진행
-		fileRepositoryUtils.deleteFile(testFileEntity);
-
-		// when - then
-		RuntimeException exception = assertThrows(
-			RuntimeException.class, () -> fileService.checkMyFileAndGet(ownerName, fileUuid)
-		);
-		Assertions.assertThat(exception.getMessage()).isEqualTo("파일이 삭제되어 있는 상태입니다.");
-	}
-
-	@DisplayName("checkMyFileAndGet : 파일이 디스크에 존재 하지 않음 -> RuntimeException(\"파일이 디스크 상에 존재하지 않습니다.\")")
-	@Test
-	@Transactional
-	public void checkMyFileNotInDisk() throws IOException {
-		// given
-		String ownerName = "testOwner";
-		UUID folderUuid = UUID.fromString("12345678-1111-1234-1234-123456789abc");
-		UUID fileUuid = UUID.fromString("12345678-2222-1234-1234-123456789abc");
-		Path path = Paths.get("src/test/resources/test.txt");
-		byte[] content = Files.readAllBytes(path);
-		MultipartFile testFile = new MockMultipartFile("test.txt", "test.txt", "text/plain", content);
-
-		MyFolder testFolderEntity = MyFolder.createMyFolderEntity(ownerName, "testFolder", null, folderUuid);
-		folderRepository.save(testFolderEntity);
-		MyFile testFileEntity = MyFile.createMyFileEntity(testFile, ownerName, testFolderEntity, fileUuid);
-		fileRepository.save(testFileEntity);
-
-		// when - then
-		RuntimeException exception = assertThrows(
-			RuntimeException.class, () -> fileService.checkMyFileAndGet(ownerName, fileUuid)
-		);
-		Assertions.assertThat(exception.getMessage()).isEqualTo("파일이 디스크 상에 존재하지 않습니다.");
-	}
-
 	@DisplayName("uploadFile : 정상 흐름")
 	@Test
 	@Transactional
@@ -254,28 +160,21 @@ public class FileServiceTest {
 	@Test
 	@Transactional
 	public void deleteFile() throws IOException {
+
 		// given
-		String ownerName = "testOwner";
-		UUID folderUuid = UUID.fromString("12345678-1111-1234-1234-123456789abc");
-		UUID fileUuid = UUID.fromString("12345678-2222-1234-1234-123456789abc");
+		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
+		MockMultipartFile mockFile = new MockMultipartFile("file1.txt", "file1.txt", "text/plain", new byte[] {123});
 
-		Path path = Paths.get("src/test/resources/test.txt");
-		byte[] content = Files.readAllBytes(path);
-		MultipartFile testFile = new MockMultipartFile("test.txt", "test.txt", "text/plain", content);
-
-		MyFolder testFolderEntity = MyFolder.createMyFolderEntity(ownerName, "testFolder", null, folderUuid);
-		folderIolUtils.createPhysicalFolder(ownerName, folderUuid);
-		folderRepository.save(testFolderEntity);
-
-		MyFile testFileEntity = MyFile.createMyFileEntity(testFile, ownerName, testFolderEntity, fileUuid);
-		fileIoUtils.save(testFile, testFileEntity);
-		MyFile fileEntity = fileRepository.save(testFileEntity);
+		UUID uuid = UUID.randomUUID();
+		MyFile file = fileRepositoryUtils.createFile(mockFile, "testOwner", hello, uuid);
+		fileIoUtils.save(mockFile, file);
 
 		// when
-		fileService.deleteFile(ownerName, fileUuid);
+		fileService.deleteFile("testOwner", file.getUuid());
 
 		// then
-		MyFile deletedFile = fileRepository.findByUuid(fileUuid).get();
+		MyFile deletedFile = fileRepository.findByUuid(uuid).get();
 		Assertions.assertThat(deletedFile.getStatus()).isEqualTo(FileItemStatus.DELETED);
 	}
 

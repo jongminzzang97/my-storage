@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.jongmin.mystorage.exception.FileNotInDatabaseException;
 import com.jongmin.mystorage.model.MyFile;
@@ -44,5 +45,17 @@ public class FileRepositoryUtils {
 			myFolder.getId(),
 			FileItemStatus.SAVED
 		).isPresent();
+	}
+
+	public MyFile createFile(MultipartFile multipartFile, String ownerName, MyFolder parentFolder) {
+		MyFile myFile = MyFile.createMyFileEntity(multipartFile, ownerName, parentFolder);
+		fileRepository.save(myFile);
+		return myFile;
+	}
+
+	public MyFile createFile(MultipartFile multipartFile, String ownerName, MyFolder parentFolder, UUID uuid) {
+		MyFile myFile = MyFile.createMyFileEntity(multipartFile, ownerName, parentFolder, uuid);
+		fileRepository.save(myFile);
+		return myFile;
 	}
 }
