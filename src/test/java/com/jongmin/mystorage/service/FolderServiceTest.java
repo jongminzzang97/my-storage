@@ -19,9 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.jongmin.mystorage.exception.FileAlreadyExistException;
 import com.jongmin.mystorage.model.MyFile;
 import com.jongmin.mystorage.model.MyFolder;
+import com.jongmin.mystorage.model.enums.FileItemStatus;
+import com.jongmin.mystorage.repository.FileRepository;
 import com.jongmin.mystorage.repository.FolderRepository;
 import com.jongmin.mystorage.service.folder.FolderService;
 import com.jongmin.mystorage.service.response.FolderResponse;
+import com.jongmin.mystorage.utils.ioutils.FileIoUtils;
 import com.jongmin.mystorage.utils.ioutils.FolderIolUtils;
 import com.jongmin.mystorage.utils.repositorytutils.FileRepositoryUtils;
 import com.jongmin.mystorage.utils.repositorytutils.FolderRepositoryUtils;
@@ -36,11 +39,13 @@ public class FolderServiceTest {
 	@Autowired
 	private FolderRepositoryUtils folderRepositoryUtils;
 	@Autowired
-	private FolderIolUtils folderIolUtils;
-	@Autowired
 	private FolderService folderService;
 	@Autowired
+	private FileRepository fileRepository;
+	@Autowired
 	private FileRepositoryUtils fileRepositoryUtils;
+	@Autowired
+	private FileIoUtils fileIoUtils;
 	@Autowired
 	private EntityManager entityManager;
 
@@ -192,7 +197,7 @@ public class FolderServiceTest {
 	@DisplayName("폴더 이동 테스트 : 옮기려는 폴더 내에 이름이 동일한 폴더가 존재하면 폴더를 옮길 수 없습니다.")
 	@Test
 	@Transactional
-	void moveFolderTest4() {
+	void moveFolderToSameNameFolderExist() {
 		// given
 		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
 		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
@@ -203,6 +208,36 @@ public class FolderServiceTest {
 		RuntimeException exception = assertThrows(FileAlreadyExistException.class,
 			() -> folderService.moveFolder("testOwner", world.getUuid(), hello.getUuid()));
 		assertThat(exception.getMessage()).isEqualTo("옮기려는 폴더에 동일한 이름의 파일이 존재해 이동이 불가능 합니다.");
+	}
+
+	@DisplayName("deleteFolder : 정상 흐름")
+	@Test
+	@Transactional
+	void deleteFolderTest() {
+		// given
+		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
+		MyFolder world = folderRepositoryUtils.createFolder("testOwner", "world", hello);
+
+		MockMultipartFile mockFile1 = new MockMultipartFile("file1.txt", "file1.txt", "text/plain", new byte[] {123});
+		MockMultipartFile mockFile2 = new MockMultipartFile("file2.txt", "file2.txt", "text/plain", new byte[] {123});
+		MyFile file1 = fileRepositoryUtils.createFile(mockFile1, "testOwner", hello);
+		MyFile file2 = fileRepositoryUtils.createFile(mockFile2, "testOwner", world);
+		fileIoUtils.save(mockFile1, file1);
+		fileIoUtils.save(mockFile2, file2);
+
+		// when
+		folderService.deleteFolder("testOwner", hello.getUuid());
+
+		// then
+		List<MyFolder> folders = folderRepository.findByOwnerNameAndFullPathStartingWith("testOwner", "/hello");
+		List<MyFile> files = fileRepository.findByOwnerNameAndFullPathStartingWith("testOwner", "/hello");
+
+		// then
+		assertThat(folders.size()).isEqualTo(2);
+		assertThat(files.size()).isEqualTo(2);
+		assertThat(folders).allMatch(folder -> folder.getStatus() == FileItemStatus.DELETED);
+		assertThat(files).allMatch(file -> file.getStatus() == FileItemStatus.DELETED);
 	}
 
 }
