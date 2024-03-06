@@ -78,5 +78,13 @@ public class MyFile extends FileSystemItem {
 		this.fullPath = parentPath + "/" + fileName;
 		return this;
 	}
+
+	public MyFile reset() {
+		this.parentPath = parentFolder.getFullPath();
+		System.out.println("this.parentPath = " + this.parentPath);
+		this.fullPath = parentPath + "/" + fileName;
+		System.out.println("this.fullPath = " + this.fullPath);
+		return this;
+	}
 }
 

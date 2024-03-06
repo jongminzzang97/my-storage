@@ -9,7 +9,6 @@ import com.jongmin.mystorage.exception.FileNotInDatabaseException;
 import com.jongmin.mystorage.model.MyFolder;
 import com.jongmin.mystorage.model.enums.FileItemStatus;
 import com.jongmin.mystorage.repository.FolderRepository;
-import com.jongmin.mystorage.utils.ioutils.FolderIolUtils;
 
 import lombok.AllArgsConstructor;
 
@@ -18,12 +17,23 @@ import lombok.AllArgsConstructor;
 public class FolderRepositoryUtils {
 
 	private final FolderRepository folderRepository;
-	private final FolderIolUtils folderIolUtils;
 
-	private MyFolder createRootFolder(String ownerName) {
+	public MyFolder createRootFolder(String ownerName) {
 		MyFolder root = MyFolder.createMyFolderEntity(ownerName, "", null);
 		folderRepository.save(root);
 		return root;
+	}
+
+	public MyFolder createFolder(String ownerName, String folderName, MyFolder parentFolder) {
+		MyFolder folder = MyFolder.createMyFolderEntity(ownerName, folderName, parentFolder);
+		folderRepository.save(folder);
+		return folder;
+	}
+
+	public MyFolder createFolder(String ownerName, String folderName, MyFolder parentFolder, UUID uuid) {
+		MyFolder folder = MyFolder.createMyFolderEntity(ownerName, folderName, parentFolder, uuid);
+		folderRepository.save(folder);
+		return folder;
 	}
 
 	public MyFolder getRootFolder(String ownerName) {
@@ -76,5 +86,14 @@ public class FolderRepositoryUtils {
 		}
 
 		return myFolder;
+	}
+
+	public boolean sameFolderNameExistsInFolder(MyFolder myFolder, String folderName) {
+		return folderRepository.findByOwnerNameAndFolderNameAndParentFolderIdAndStatus(
+			myFolder.getOwnerName(),
+			folderName,
+			myFolder.getId(),
+			FileItemStatus.SAVED
+		).isPresent();
 	}
 }

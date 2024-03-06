@@ -20,5 +20,8 @@ public interface FolderRepository extends JpaRepository<MyFolder, Long> {
 
 	Optional<MyFolder> findByOwnerNameAndFullPath(String ownerName, String fullPath);
 
+	Optional<MyFolder> findByOwnerNameAndFolderNameAndParentFolderIdAndStatus(String ownerName, String folderName,
+		Long id, FileItemStatus status);
+
 	List<MyFolder> findByOwnerNameAndFullPathStartingWith(String ownerName, String fullPath);
 }
