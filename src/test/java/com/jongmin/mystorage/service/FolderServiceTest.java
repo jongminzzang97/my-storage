@@ -12,14 +12,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.jongmin.mystorage.exception.FileAlreadyExistException;
+import com.jongmin.mystorage.model.MyFile;
 import com.jongmin.mystorage.model.MyFolder;
 import com.jongmin.mystorage.repository.FolderRepository;
 import com.jongmin.mystorage.service.folder.FolderService;
 import com.jongmin.mystorage.service.response.FolderResponse;
 import com.jongmin.mystorage.utils.ioutils.FolderIolUtils;
+import com.jongmin.mystorage.utils.repositorytutils.FileRepositoryUtils;
 import com.jongmin.mystorage.utils.repositorytutils.FolderRepositoryUtils;
 
 import jakarta.persistence.EntityManager;
@@ -35,6 +39,8 @@ public class FolderServiceTest {
 	private FolderIolUtils folderIolUtils;
 	@Autowired
 	private FolderService folderService;
+	@Autowired
+	private FileRepositoryUtils fileRepositoryUtils;
 	@Autowired
 	private EntityManager entityManager;
 
@@ -112,8 +118,91 @@ public class FolderServiceTest {
 
 		// then
 		assertThrows(
-				RuntimeException.class, () -> folderService.createFolder(ownerName1, folderName1, null)
+			RuntimeException.class, () -> folderService.createFolder(ownerName1, folderName1, null)
 		);
+	}
+
+	@DisplayName("폴더 이동 테스트 : 정상적인 흐름 1")
+	@Test
+	@Transactional
+	void moveFolderTest() {
+		// given
+		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
+		MyFolder world1 = folderRepositoryUtils.createFolder("testOwner", "world1", hello);
+		MyFolder world2 = folderRepositoryUtils.createFolder("testOwner", "world2", hello);
+
+		MockMultipartFile mockFile = new MockMultipartFile("test.txt", "test.txt", "text/plain", new byte[] {123});
+		MyFile file1 = fileRepositoryUtils.createFile(mockFile, "testOwner", world1);
+
+		// when
+		folderService.moveFolder("testOwner", world1.getUuid(), world2.getUuid());
+
+		// then
+		assertThat(world1.getParentPath()).isEqualTo("/hello/world2");
+		assertThat(world1.getFullPath()).isEqualTo("/hello/world2/world1");
+		assertThat(world1.getParentFolder().getId()).isEqualTo(world2.getId());
+
+		assertThat(file1.getParentPath()).isEqualTo("/hello/world2/world1");
+		assertThat(file1.getFullPath()).isEqualTo("/hello/world2/world1/test.txt");
+	}
+
+
+	@DisplayName("폴더 이동 테스트 : 정상적인 흐름 2")
+	@Test
+	@Transactional
+	void moveFolderTest2() {
+		// given
+		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
+		MyFolder world1 = folderRepositoryUtils.createFolder("testOwner", "world1", hello);
+		MyFolder world2 = folderRepositoryUtils.createFolder("testOwner", "world2", world1);
+
+		MockMultipartFile mockFile1 = new MockMultipartFile("file1.txt", "file1.txt", "text/plain", new byte[] {123});
+		MockMultipartFile mockFile2 = new MockMultipartFile("file2.txt", "file2.txt", "text/plain", new byte[] {123});
+		MyFile file1 = fileRepositoryUtils.createFile(mockFile1, "testOwner", world1);
+		MyFile file2 = fileRepositoryUtils.createFile(mockFile2, "testOwner", world2);
+
+		// when
+		folderService.moveFolder("testOwner", world2.getUuid(), hello.getUuid());
+
+		// then
+		assertThat(world1.getFullPath()).isEqualTo("/hello/world1");
+		assertThat(file1.getFullPath()).isEqualTo("/hello/world1/file1.txt");
+		assertThat(world2.getFullPath()).isEqualTo("/hello/world2");
+		assertThat(file2.getFullPath()).isEqualTo("/hello/world2/file2.txt");
+	}
+
+
+	@DisplayName("폴더 이동 테스트 : 자신의 하위 폴더로 옮겨질 수 없습니다.")
+	@Test
+	@Transactional
+	void moveFolderToChild() {
+		// given
+		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
+		MyFolder world = folderRepositoryUtils.createFolder("testOwner", "world1", hello);
+
+		// when - then
+		RuntimeException exception = assertThrows(RuntimeException.class,
+			() -> folderService.moveFolder("testOwner", hello.getUuid(), world.getUuid()));
+		assertThat(exception.getMessage()).isEqualTo("자신의 하위 폴더로 옮겨질 수 없습니다.");
+	}
+
+	@DisplayName("폴더 이동 테스트 : 옮기려는 폴더 내에 이름이 동일한 폴더가 존재하면 폴더를 옮길 수 없습니다.")
+	@Test
+	@Transactional
+	void moveFolderTest4() {
+		// given
+		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
+		MyFolder world = folderRepositoryUtils.createFolder("testOwner", "world", root);
+		MyFolder helloWorld = folderRepositoryUtils.createFolder("testOwner", "world", hello);
+
+		// when - then
+		RuntimeException exception = assertThrows(FileAlreadyExistException.class,
+			() -> folderService.moveFolder("testOwner", world.getUuid(), hello.getUuid()));
+		assertThat(exception.getMessage()).isEqualTo("옮기려는 폴더에 동일한 이름의 파일이 존재해 이동이 불가능 합니다.");
 	}
 
 }
