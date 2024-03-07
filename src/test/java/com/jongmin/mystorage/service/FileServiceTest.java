@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.assertj.core.api.Assertions;
@@ -177,6 +178,55 @@ public class FileServiceTest {
 		MyFile deletedFile = fileRepository.findByUuid(uuid).get();
 		Assertions.assertThat(deletedFile.getStatus()).isEqualTo(FileItemStatus.DELETED);
 	}
+
+	@DisplayName("moveFile : 정상 흐름")
+	@Test
+	@Transactional
+	public void moveFile() {
+		// given
+		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
+		MyFolder world = folderRepositoryUtils.createFolder("testOwner", "world", root);
+
+		MockMultipartFile mockFile1 = new MockMultipartFile("file1.txt", "file1.txt", "text/plain", new byte[] {123});
+		MockMultipartFile mockFile2 = new MockMultipartFile("file2.txt", "file2.txt", "text/plain", new byte[] {123});
+		MyFile file1 = fileRepositoryUtils.createFile(mockFile1, "testOwner", hello);
+		MyFile file2 = fileRepositoryUtils.createFile(mockFile2, "testOwner", world);
+		fileIoUtils.save(mockFile1, file1);
+		fileIoUtils.save(mockFile2, file2);
+
+		// when
+		FileResponse fileResponse = fileService.moveFile("testOwner", file1.getUuid(), world.getUuid());
+
+		// then
+		Assertions.assertThat(fileResponse.getFullPath()).isEqualTo("/world/file1.txt");
+
+		MyFile movedFile = fileRepository.findByUuid(file1.getUuid()).get();
+		Assertions.assertThat(movedFile.getFullPath()).isEqualTo("/world/file1.txt");
+	}
+
+	@DisplayName("moveFile : 옮기려는 폴더에 동일한 이름의 파일이 존재하면 이동이 불가능하다.")
+	@Test
+	@Transactional
+	public void moveFileToSameFileNameExist() {
+		// given
+		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
+		MyFolder world = folderRepositoryUtils.createFolder("testOwner", "world", root);
+
+		MockMultipartFile mockFile1 = new MockMultipartFile("file1.txt", "file1.txt", "text/plain", new byte[] {123});
+		MockMultipartFile mockFile2 = new MockMultipartFile("file1.txt", "file1.txt", "text/plain", new byte[] {12});
+		MyFile file1 = fileRepositoryUtils.createFile(mockFile1, "testOwner", hello);
+		MyFile file2 = fileRepositoryUtils.createFile(mockFile2, "testOwner", world);
+		fileIoUtils.save(mockFile1, file1);
+		fileIoUtils.save(mockFile2, file2);
+
+		// when - then
+		FileAlreadyExistException exception = assertThrows(FileAlreadyExistException.class,
+			() -> fileService.moveFile("testOwner", file1.getUuid(), world.getUuid()));
+		Assertions.assertThat(exception.getMessage()).isEqualTo("옮기려는 폴더에 동일한 이름의 파일이 존재해 이동이 불가능 합니다.");
+	}
+
 
 	private void deleteDirectoryAndFiles(File targetFolder) {
 		File[] files = targetFolder.listFiles();
