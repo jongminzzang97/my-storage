@@ -24,9 +24,6 @@ public abstract class FileSystemItem extends BaseEntity {
 	protected String fullPath;
 	protected String parentPath;
 
-	// 실제 파일에 접근하기 위한 경로
-	protected String accessRoute;
-
 	@ManyToOne(fetch = FetchType.LAZY)
 	protected MyFolder parentFolder;
 }

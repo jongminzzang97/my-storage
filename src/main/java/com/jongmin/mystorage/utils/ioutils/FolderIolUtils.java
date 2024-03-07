@@ -27,10 +27,4 @@ public class FolderIolUtils {
 			throw new RuntimeException(e);
 		}
 	}
-
-	public boolean folderNotExists(MyFolder myFolder) {
-		String accessRoute = myFolder.getAccessRoute();
-		Path path = Paths.get(baseDir + accessRoute);
-		return Files.notExists(path);
-	}
 }

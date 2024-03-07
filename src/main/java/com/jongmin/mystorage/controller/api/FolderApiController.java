@@ -14,10 +14,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.jongmin.mystorage.controller.api.dto.FolderUpdateDto;
-import com.jongmin.mystorage.service.file.FileServiceResponse;
+import com.jongmin.mystorage.controller.api.dto.MoveRequestDto;
 import com.jongmin.mystorage.service.folder.FolderService;
+import com.jongmin.mystorage.service.response.FileResponse;
 import com.jongmin.mystorage.service.response.FolderInfoResponse;
 import com.jongmin.mystorage.service.response.FolderResponse;
+import com.jongmin.mystorage.service.response.StringResponse;
 
 import lombok.AllArgsConstructor;
 
@@ -48,8 +50,15 @@ public class FolderApiController {
 	}
 
 	@DeleteMapping("/api/folders/{folderId}")
-	public FileServiceResponse deleteFolder(@RequestParam("folderId") UUID folderId,
-		@RequestHeader("ownerName") String ownerName) {
-		return null;
+	public StringResponse deleteFolder(@PathVariable(name = "folderId", required = false) UUID folderId,
+											@RequestHeader("ownerName") String ownerName) {
+		return folderService.deleteFolder(ownerName, folderId);
+	}
+
+	@PostMapping("/api/folders/{folderUuid}/move")
+	public FolderResponse moveFile(@RequestHeader("ownerName") String ownerName,
+		@PathVariable(name = "folderUuid", required = true) UUID transferFolderUuid,
+		@RequestBody MoveRequestDto requestDto) {
+		return folderService.moveFolder(ownerName, transferFolderUuid, requestDto.getDestFolderUuid());
 	}
 }

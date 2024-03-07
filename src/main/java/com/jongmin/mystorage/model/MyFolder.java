@@ -24,10 +24,9 @@ public class MyFolder extends FileSystemItem {
 	@OneToMany(mappedBy = "parentFolder", fetch = FetchType.LAZY)
 	private List<MyFile> files;
 
-
 	@Builder
 	public MyFolder(UUID uuid, String ownerName, String parentPath, String folderName,
-					String fullPath, MyFolder parentFolder, String accessRoute, FileItemStatus fileItemStatus) {
+		String fullPath, MyFolder parentFolder, FileItemStatus fileItemStatus) {
 		this.uuid = uuid;
 		this.ownerName = ownerName;
 		this.parentPath = parentPath;
@@ -35,7 +34,6 @@ public class MyFolder extends FileSystemItem {
 		this.fullPath = fullPath;
 		this.status = FileItemStatus.SAVED;
 		this.parentFolder = parentFolder;
-		this.accessRoute = accessRoute;
 	}
 
 	public static MyFolder createMyFolderEntity(String ownerName, String folderName, MyFolder parentFolder, UUID uuid) {
@@ -46,20 +44,35 @@ public class MyFolder extends FileSystemItem {
 			fullPath = parentPath + "/" + folderName;
 		}
 
-		String accessRoute = ownerName + "/" + uuid;
 		FileItemStatus status = FileItemStatus.SAVED;
 
 		return MyFolder.builder()
 			.uuid(uuid).ownerName(ownerName).folderName(folderName)
 			.parentFolder(parentFolder).parentPath(parentPath).fullPath(fullPath)
-			.fileItemStatus(status).accessRoute(accessRoute)
+			.fileItemStatus(status)
 			.build();
 	}
 
 	public static MyFolder createMyFolderEntity(String ownerName, String folderName, MyFolder parentFolder) {
 		UUID uuid = UUID.randomUUID();
-		return	createMyFolderEntity(ownerName, folderName, parentFolder, uuid);
+		return createMyFolderEntity(ownerName, folderName, parentFolder, uuid);
 	}
 
+	public MyFolder deleteFolder() {
+		this.status = FileItemStatus.DELETED;
+		return this;
+	}
 
+	public MyFolder move(MyFolder destFolder) {
+		this.parentFolder = destFolder;
+		this.parentPath = destFolder.getFullPath();
+		this.fullPath = parentPath + "/" + folderName;
+		return this;
+	}
+
+	public MyFolder replacePath(String from, String to) {
+		this.parentPath = this.getParentPath().replaceFirst(from, to);
+		this.fullPath = this.parentPath + "/" + this.folderName;
+		return this;
+	}
 }

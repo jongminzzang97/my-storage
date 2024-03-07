@@ -20,9 +20,12 @@ public class MyFile extends FileSystemItem {
 	private Long size;
 	private String contentType;
 
+	// 실제 파일에 접근하기 위한 경로
+	private String accessRoute;
+
 	@Builder
 	public MyFile(UUID uuid, String ownerName, Long size, String contentType, MyFolder parentFolder,
-				String fileName, String fullPath, String parentPath, String accessRoute, FileItemStatus status) {
+		String fileName, String fullPath, String parentPath, String accessRoute, FileItemStatus status) {
 		this.uuid = uuid;
 		this.ownerName = ownerName;
 		this.size = size;
@@ -36,7 +39,7 @@ public class MyFile extends FileSystemItem {
 	}
 
 	public static MyFile createMyFileEntity(MultipartFile multipartFile, String ownerName,
-											MyFolder parentFolder, UUID uuid) {
+		MyFolder parentFolder, UUID uuid) {
 		Long size = multipartFile.getSize();
 		String contentType = multipartFile.getContentType();
 		String fileName = multipartFile.getOriginalFilename();
@@ -44,8 +47,7 @@ public class MyFile extends FileSystemItem {
 
 		String parentPath = parentFolder.getFullPath();
 		String fullPath = parentPath + "/" + fileName;
-		String parentAccessRoute = parentFolder.getAccessRoute();
-		String accessRoute = parentAccessRoute + "/" + uuid + "_"  + fileName;
+		String accessRoute = ownerName + "/" + uuid + "_" + fileName;
 
 		return MyFile.builder()
 			.uuid(uuid)
@@ -67,6 +69,21 @@ public class MyFile extends FileSystemItem {
 
 	public MyFile deleteFile() {
 		this.status = FileItemStatus.DELETED;
+		return this;
+	}
+
+	public MyFile move(MyFolder parentFolder) {
+		this.parentFolder = parentFolder;
+		this.parentPath = parentFolder.getFullPath();
+		this.fullPath = parentPath + "/" + fileName;
+		return this;
+	}
+
+	public MyFile reset() {
+		this.parentPath = parentFolder.getFullPath();
+		System.out.println("this.parentPath = " + this.parentPath);
+		this.fullPath = parentPath + "/" + fileName;
+		System.out.println("this.fullPath = " + this.fullPath);
 		return this;
 	}
 }
