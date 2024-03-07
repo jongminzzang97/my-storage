@@ -47,13 +47,14 @@ public class FileRepositoryUtils {
 		).isPresent();
 	}
 
-	public MyFile createFile(MultipartFile multipartFile, String ownerName, MyFolder parentFolder) {
+	public MyFile createAndPersistFile(MultipartFile multipartFile, String ownerName, MyFolder parentFolder) {
 		MyFile myFile = MyFile.createMyFileEntity(multipartFile, ownerName, parentFolder);
 		fileRepository.save(myFile);
 		return myFile;
 	}
 
-	public MyFile createFile(MultipartFile multipartFile, String ownerName, MyFolder parentFolder, UUID uuid) {
+	public MyFile createAndPersistFile(MultipartFile multipartFile, String ownerName, MyFolder parentFolder,
+		UUID uuid) {
 		MyFile myFile = MyFile.createMyFileEntity(multipartFile, ownerName, parentFolder, uuid);
 		fileRepository.save(myFile);
 		return myFile;

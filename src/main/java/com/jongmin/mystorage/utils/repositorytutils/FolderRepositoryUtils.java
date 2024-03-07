@@ -18,19 +18,19 @@ public class FolderRepositoryUtils {
 
 	private final FolderRepository folderRepository;
 
-	public MyFolder createRootFolder(String ownerName) {
+	public MyFolder createAndPersistRootFolder(String ownerName) {
 		MyFolder root = MyFolder.createMyFolderEntity(ownerName, "", null);
 		folderRepository.save(root);
 		return root;
 	}
 
-	public MyFolder createFolder(String ownerName, String folderName, MyFolder parentFolder) {
+	public MyFolder createAndPersistFolder(String ownerName, String folderName, MyFolder parentFolder) {
 		MyFolder folder = MyFolder.createMyFolderEntity(ownerName, folderName, parentFolder);
 		folderRepository.save(folder);
 		return folder;
 	}
 
-	public MyFolder createFolder(String ownerName, String folderName, MyFolder parentFolder, UUID uuid) {
+	public MyFolder createAndPersistFolder(String ownerName, String folderName, MyFolder parentFolder, UUID uuid) {
 		MyFolder folder = MyFolder.createMyFolderEntity(ownerName, folderName, parentFolder, uuid);
 		folderRepository.save(folder);
 		return folder;
@@ -40,7 +40,7 @@ public class FolderRepositoryUtils {
 		Optional<MyFolder> optional = folderRepository.findByOwnerNameAndFullPath(ownerName, "");
 		MyFolder root;
 		if (optional.isEmpty()) {
-			root = createRootFolder(ownerName);
+			root = createAndPersistRootFolder(ownerName);
 		} else {
 			root = optional.get();
 		}

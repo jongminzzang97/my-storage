@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.assertj.core.api.Assertions;
@@ -25,7 +24,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.jongmin.mystorage.controller.api.dto.UploadFileRequestDto;
 import com.jongmin.mystorage.exception.FileAlreadyExistException;
-import com.jongmin.mystorage.exception.FileNotInDatabaseException;
 import com.jongmin.mystorage.model.MyFile;
 import com.jongmin.mystorage.model.MyFolder;
 import com.jongmin.mystorage.model.enums.FileItemStatus;
@@ -163,12 +161,12 @@ public class FileServiceTest {
 	public void deleteFile() throws IOException {
 
 		// given
-		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
-		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
+		MyFolder root = folderRepositoryUtils.createAndPersistRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createAndPersistFolder("testOwner", "hello", root);
 		MockMultipartFile mockFile = new MockMultipartFile("file1.txt", "file1.txt", "text/plain", new byte[] {123});
 
 		UUID uuid = UUID.randomUUID();
-		MyFile file = fileRepositoryUtils.createFile(mockFile, "testOwner", hello, uuid);
+		MyFile file = fileRepositoryUtils.createAndPersistFile(mockFile, "testOwner", hello, uuid);
 		fileIoUtils.save(mockFile, file);
 
 		// when
@@ -184,14 +182,14 @@ public class FileServiceTest {
 	@Transactional
 	public void moveFile() {
 		// given
-		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
-		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
-		MyFolder world = folderRepositoryUtils.createFolder("testOwner", "world", root);
+		MyFolder root = folderRepositoryUtils.createAndPersistRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createAndPersistFolder("testOwner", "hello", root);
+		MyFolder world = folderRepositoryUtils.createAndPersistFolder("testOwner", "world", root);
 
 		MockMultipartFile mockFile1 = new MockMultipartFile("file1.txt", "file1.txt", "text/plain", new byte[] {123});
 		MockMultipartFile mockFile2 = new MockMultipartFile("file2.txt", "file2.txt", "text/plain", new byte[] {123});
-		MyFile file1 = fileRepositoryUtils.createFile(mockFile1, "testOwner", hello);
-		MyFile file2 = fileRepositoryUtils.createFile(mockFile2, "testOwner", world);
+		MyFile file1 = fileRepositoryUtils.createAndPersistFile(mockFile1, "testOwner", hello);
+		MyFile file2 = fileRepositoryUtils.createAndPersistFile(mockFile2, "testOwner", world);
 		fileIoUtils.save(mockFile1, file1);
 		fileIoUtils.save(mockFile2, file2);
 
@@ -210,14 +208,14 @@ public class FileServiceTest {
 	@Transactional
 	public void moveFileToSameFileNameExist() {
 		// given
-		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
-		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
-		MyFolder world = folderRepositoryUtils.createFolder("testOwner", "world", root);
+		MyFolder root = folderRepositoryUtils.createAndPersistRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createAndPersistFolder("testOwner", "hello", root);
+		MyFolder world = folderRepositoryUtils.createAndPersistFolder("testOwner", "world", root);
 
 		MockMultipartFile mockFile1 = new MockMultipartFile("file1.txt", "file1.txt", "text/plain", new byte[] {123});
 		MockMultipartFile mockFile2 = new MockMultipartFile("file1.txt", "file1.txt", "text/plain", new byte[] {12});
-		MyFile file1 = fileRepositoryUtils.createFile(mockFile1, "testOwner", hello);
-		MyFile file2 = fileRepositoryUtils.createFile(mockFile2, "testOwner", world);
+		MyFile file1 = fileRepositoryUtils.createAndPersistFile(mockFile1, "testOwner", hello);
+		MyFile file2 = fileRepositoryUtils.createAndPersistFile(mockFile2, "testOwner", world);
 		fileIoUtils.save(mockFile1, file1);
 		fileIoUtils.save(mockFile2, file2);
 

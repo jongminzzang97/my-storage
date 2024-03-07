@@ -25,7 +25,6 @@ import com.jongmin.mystorage.repository.FolderRepository;
 import com.jongmin.mystorage.service.folder.FolderService;
 import com.jongmin.mystorage.service.response.FolderResponse;
 import com.jongmin.mystorage.utils.ioutils.FileIoUtils;
-import com.jongmin.mystorage.utils.ioutils.FolderIolUtils;
 import com.jongmin.mystorage.utils.repositorytutils.FileRepositoryUtils;
 import com.jongmin.mystorage.utils.repositorytutils.FolderRepositoryUtils;
 
@@ -132,13 +131,13 @@ public class FolderServiceTest {
 	@Transactional
 	void moveFolderTest() {
 		// given
-		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
-		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
-		MyFolder world1 = folderRepositoryUtils.createFolder("testOwner", "world1", hello);
-		MyFolder world2 = folderRepositoryUtils.createFolder("testOwner", "world2", hello);
+		MyFolder root = folderRepositoryUtils.createAndPersistRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createAndPersistFolder("testOwner", "hello", root);
+		MyFolder world1 = folderRepositoryUtils.createAndPersistFolder("testOwner", "world1", hello);
+		MyFolder world2 = folderRepositoryUtils.createAndPersistFolder("testOwner", "world2", hello);
 
 		MockMultipartFile mockFile = new MockMultipartFile("test.txt", "test.txt", "text/plain", new byte[] {123});
-		MyFile file1 = fileRepositoryUtils.createFile(mockFile, "testOwner", world1);
+		MyFile file1 = fileRepositoryUtils.createAndPersistFile(mockFile, "testOwner", world1);
 
 		// when
 		folderService.moveFolder("testOwner", world1.getUuid(), world2.getUuid());
@@ -158,15 +157,15 @@ public class FolderServiceTest {
 	@Transactional
 	void moveFolderTest2() {
 		// given
-		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
-		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
-		MyFolder world1 = folderRepositoryUtils.createFolder("testOwner", "world1", hello);
-		MyFolder world2 = folderRepositoryUtils.createFolder("testOwner", "world2", world1);
+		MyFolder root = folderRepositoryUtils.createAndPersistRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createAndPersistFolder("testOwner", "hello", root);
+		MyFolder world1 = folderRepositoryUtils.createAndPersistFolder("testOwner", "world1", hello);
+		MyFolder world2 = folderRepositoryUtils.createAndPersistFolder("testOwner", "world2", world1);
 
 		MockMultipartFile mockFile1 = new MockMultipartFile("file1.txt", "file1.txt", "text/plain", new byte[] {123});
 		MockMultipartFile mockFile2 = new MockMultipartFile("file2.txt", "file2.txt", "text/plain", new byte[] {123});
-		MyFile file1 = fileRepositoryUtils.createFile(mockFile1, "testOwner", world1);
-		MyFile file2 = fileRepositoryUtils.createFile(mockFile2, "testOwner", world2);
+		MyFile file1 = fileRepositoryUtils.createAndPersistFile(mockFile1, "testOwner", world1);
+		MyFile file2 = fileRepositoryUtils.createAndPersistFile(mockFile2, "testOwner", world2);
 
 		// when
 		folderService.moveFolder("testOwner", world2.getUuid(), hello.getUuid());
@@ -184,9 +183,9 @@ public class FolderServiceTest {
 	@Transactional
 	void moveFolderToChild() {
 		// given
-		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
-		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
-		MyFolder world = folderRepositoryUtils.createFolder("testOwner", "world1", hello);
+		MyFolder root = folderRepositoryUtils.createAndPersistRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createAndPersistFolder("testOwner", "hello", root);
+		MyFolder world = folderRepositoryUtils.createAndPersistFolder("testOwner", "world1", hello);
 
 		// when - then
 		RuntimeException exception = assertThrows(RuntimeException.class,
@@ -199,10 +198,10 @@ public class FolderServiceTest {
 	@Transactional
 	void moveFolderToSameNameFolderExist() {
 		// given
-		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
-		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
-		MyFolder world = folderRepositoryUtils.createFolder("testOwner", "world", root);
-		MyFolder helloWorld = folderRepositoryUtils.createFolder("testOwner", "world", hello);
+		MyFolder root = folderRepositoryUtils.createAndPersistRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createAndPersistFolder("testOwner", "hello", root);
+		MyFolder world = folderRepositoryUtils.createAndPersistFolder("testOwner", "world", root);
+		MyFolder helloWorld = folderRepositoryUtils.createAndPersistFolder("testOwner", "world", hello);
 
 		// when - then
 		RuntimeException exception = assertThrows(FileAlreadyExistException.class,
@@ -215,14 +214,14 @@ public class FolderServiceTest {
 	@Transactional
 	void deleteFolderTest() {
 		// given
-		MyFolder root = folderRepositoryUtils.createRootFolder("testOwner");
-		MyFolder hello = folderRepositoryUtils.createFolder("testOwner", "hello", root);
-		MyFolder world = folderRepositoryUtils.createFolder("testOwner", "world", hello);
+		MyFolder root = folderRepositoryUtils.createAndPersistRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createAndPersistFolder("testOwner", "hello", root);
+		MyFolder world = folderRepositoryUtils.createAndPersistFolder("testOwner", "world", hello);
 
 		MockMultipartFile mockFile1 = new MockMultipartFile("file1.txt", "file1.txt", "text/plain", new byte[] {123});
 		MockMultipartFile mockFile2 = new MockMultipartFile("file2.txt", "file2.txt", "text/plain", new byte[] {123});
-		MyFile file1 = fileRepositoryUtils.createFile(mockFile1, "testOwner", hello);
-		MyFile file2 = fileRepositoryUtils.createFile(mockFile2, "testOwner", world);
+		MyFile file1 = fileRepositoryUtils.createAndPersistFile(mockFile1, "testOwner", hello);
+		MyFile file2 = fileRepositoryUtils.createAndPersistFile(mockFile2, "testOwner", world);
 		fileIoUtils.save(mockFile1, file1);
 		fileIoUtils.save(mockFile2, file2);
 
