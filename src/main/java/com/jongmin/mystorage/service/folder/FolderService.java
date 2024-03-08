@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import com.jongmin.mystorage.exception.FileAlreadyExistException;
 import com.jongmin.mystorage.model.MyFile;
 import com.jongmin.mystorage.model.MyFolder;
+import com.jongmin.mystorage.model.StorageInfo;
 import com.jongmin.mystorage.repository.FileRepository;
 import com.jongmin.mystorage.repository.FolderRepository;
 import com.jongmin.mystorage.service.response.FolderInfoResponse;
@@ -16,6 +17,7 @@ import com.jongmin.mystorage.service.response.FolderResponse;
 import com.jongmin.mystorage.service.response.StringResponse;
 import com.jongmin.mystorage.utils.ioutils.FileIoUtils;
 import com.jongmin.mystorage.utils.repositorytutils.FolderRepositoryUtils;
+import com.jongmin.mystorage.utils.repositorytutils.StorageInfoRepositoryUtils;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ public class FolderService {
 
 	private final FileRepository fileRepository;
 	private final FileIoUtils fileIoUtils;
+	private final StorageInfoRepositoryUtils storageInfoRepositoryUtils;
 
 	@Transactional
 	public FolderResponse createFolder(String ownerName, String folderName, UUID parentFolderUuid) {
@@ -51,6 +54,9 @@ public class FolderService {
 
 		MyFolder createdFolder = folderRepositoryUtils.createAndPersistFolder(ownerName, folderName, parentFolder);
 		parentFolder.setUpdateAt(LocalDateTime.now());
+
+		StorageInfo storageInfo = storageInfoRepositoryUtils.getStorageInfo(ownerName);
+		storageInfoRepositoryUtils.addFolder(storageInfo);
 
 		return FolderResponse.fromMyFolder(createdFolder);
 	}

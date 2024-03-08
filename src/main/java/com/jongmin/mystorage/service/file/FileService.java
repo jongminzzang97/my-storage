@@ -11,12 +11,14 @@ import com.jongmin.mystorage.exception.FileAlreadyExistException;
 import com.jongmin.mystorage.exception.FileNotInFileSystemException;
 import com.jongmin.mystorage.model.MyFile;
 import com.jongmin.mystorage.model.MyFolder;
+import com.jongmin.mystorage.model.StorageInfo;
 import com.jongmin.mystorage.repository.FileRepository;
 import com.jongmin.mystorage.service.response.FileResponse;
 import com.jongmin.mystorage.service.response.StringResponse;
 import com.jongmin.mystorage.utils.ioutils.FileIoUtils;
 import com.jongmin.mystorage.utils.repositorytutils.FileRepositoryUtils;
 import com.jongmin.mystorage.utils.repositorytutils.FolderRepositoryUtils;
+import com.jongmin.mystorage.utils.repositorytutils.StorageInfoRepositoryUtils;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ public class FileService {
 	private final FolderRepositoryUtils folderRepositoryUtils;
 	private final FileRepositoryUtils fileRepositoryUtils;
 	private final FileIoUtils fileIoUtils;
+	private final StorageInfoRepositoryUtils storageInfoRepositoryUtils;
 
 	public FileResponse uploadFile(String ownerName, UploadFileRequestDto requestDto) {
 		MyFolder parentFolder = folderRepositoryUtils.getFolderByUuid(requestDto.getFolderUuid());
@@ -42,6 +45,9 @@ public class FileService {
 		fileIoUtils.save(requestDto.getMultipartFile(), myFileEntity);
 		fileRepository.save(myFileEntity);
 		parentFolder.getParentFolder().setUpdateAt(LocalDateTime.now());
+
+		StorageInfo storageInfo = storageInfoRepositoryUtils.getStorageInfo(ownerName);
+		storageInfoRepositoryUtils.addFile(storageInfo, myFileEntity);
 
 		return FileResponse.fromMyFile(myFileEntity);
 	}
