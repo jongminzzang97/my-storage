@@ -10,6 +10,8 @@ import com.jongmin.mystorage.exception.FileAlreadyExistException;
 import com.jongmin.mystorage.model.MyFile;
 import com.jongmin.mystorage.model.MyFolder;
 import com.jongmin.mystorage.model.StorageInfo;
+import com.jongmin.mystorage.model.enums.FileItemStatus;
+import com.jongmin.mystorage.repository.CountAndSum;
 import com.jongmin.mystorage.repository.FileRepository;
 import com.jongmin.mystorage.repository.FolderRepository;
 import com.jongmin.mystorage.service.response.FolderInfoResponse;
@@ -64,13 +66,27 @@ public class FolderService {
 	@Transactional
 	public FolderInfoResponse readFolder(String ownerName, UUID folderId) {
 		MyFolder folder;
+		Long folderCount;
+		Long fileCount;
+		Long size;
 		if (folderId == null) {
 			folder = folderRepositoryUtils.getRootFolder(ownerName);
+			// root : storageInfo를 이용해서 구하기
+			StorageInfo storageInfo = storageInfoRepositoryUtils.getStorageInfo(ownerName);
+			folderCount = storageInfo.getFolderCount() - 1;
+			fileCount = storageInfo.getFileCount();
+			size = storageInfo.getSize();
 		} else {
 			folder = folderRepositoryUtils.getFolderByUuidWithSavedStatus(ownerName, folderId);
+			folderCount = folderRepository.countByOwnerNameAndFullPathStartingWithAndStatus(ownerName,
+				folder.getFullPath(), FileItemStatus.SAVED) - 1;
+			CountAndSum countAndSum = fileRepository.countAndSumByOwnerNameAndFullPath(ownerName, folder.getFullPath());
+
+			fileCount = countAndSum.getCount();
+			size = countAndSum.getTotalSize();
 		}
 
-		return FolderInfoResponse.fromMyFolder(folder);
+		return FolderInfoResponse.fromMyFolder(folder, folderCount, fileCount, size);
 	}
 
 	@Transactional
