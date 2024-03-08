@@ -24,6 +24,9 @@ public class StorageInfo extends BaseEntity {
 
 	public StorageInfo(String ownerName) {
 		this.ownerName = ownerName;
+		this.size = 0L;
+		this.fileCount = 0L;
+		this.folderCount = 0L;
 	}
 
 	public void setSize(Long size) {
