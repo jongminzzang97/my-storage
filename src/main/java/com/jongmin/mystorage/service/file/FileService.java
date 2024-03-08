@@ -1,5 +1,6 @@
 package com.jongmin.mystorage.service.file;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.springframework.core.io.Resource;
@@ -40,6 +41,8 @@ public class FileService {
 
 		fileIoUtils.save(requestDto.getMultipartFile(), myFileEntity);
 		fileRepository.save(myFileEntity);
+		parentFolder.getParentFolder().setUpdateAt(LocalDateTime.now());
+
 		return FileResponse.fromMyFile(myFileEntity);
 	}
 
@@ -59,6 +62,7 @@ public class FileService {
 		}
 		fileRepositoryUtils.deleteFile(checkedFile);
 		fileIoUtils.deleteFile(checkedFile);
+		checkedFile.getParentFolder().setUpdateAt(LocalDateTime.now());
 
 		return new StringResponse("요청한 파일에 대한 삭제가 성공적으로 진행되었습니다.");
 	}
@@ -76,6 +80,7 @@ public class FileService {
 	@Transactional
 	public FileResponse moveFile(String ownerName, UUID fileUuid, UUID destFolderUuid) {
 		MyFile file = fileRepositoryUtils.getFileByUuidWithSavedStatus(ownerName, fileUuid);
+		MyFolder beforeFolder = file.getParentFolder();
 		MyFolder destFolder = folderRepositoryUtils.getFolderByUuidWithSavedStatus(ownerName, destFolderUuid);
 
 		if (fileRepositoryUtils.sameFileNameExistsInFolder(file, destFolder)) {
@@ -83,6 +88,8 @@ public class FileService {
 		} else {
 			file.move(destFolder);
 		}
+		beforeFolder.getParentFolder().setUpdateAt(LocalDateTime.now());
+		destFolder.getParentFolder().setUpdateAt(LocalDateTime.now());
 
 		return FileResponse.fromMyFile(file);
 	}

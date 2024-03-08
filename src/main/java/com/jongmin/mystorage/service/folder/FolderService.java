@@ -1,5 +1,6 @@
 package com.jongmin.mystorage.service.folder;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -48,8 +49,8 @@ public class FolderService {
 			}
 		}
 
-		MyFolder createdFolder = MyFolder.createMyFolderEntity(ownerName, folderName, parentFolder);
-		folderRepository.save(createdFolder);
+		MyFolder createdFolder = folderRepositoryUtils.createAndPersistFolder(ownerName, folderName, parentFolder);
+		parentFolder.setUpdateAt(LocalDateTime.now());
 
 		return FolderResponse.fromMyFolder(createdFolder);
 	}
@@ -79,6 +80,8 @@ public class FolderService {
 		List<MyFolder> folders = folderRepository.findByOwnerNameAndFullPathStartingWith(ownerName, fullPath);
 		folders.stream().forEach(MyFolder::deleteFolder);
 
+		myFolder.getParentFolder().setUpdateAt(LocalDateTime.now());
+
 		return new StringResponse("폴더 삭제가 완료되었습니다");
 	}
 
@@ -99,6 +102,7 @@ public class FolderService {
 
 		MyFolder transferFolder = folderRepositoryUtils.getFolderByUuidWithSavedStatus(ownerName, transferFolderUuid);
 		MyFolder destFolder = folderRepositoryUtils.getFolderByUuidWithSavedStatus(ownerName, destFolderUuid);
+		MyFolder beforeFolder = transferFolder.getParentFolder();
 
 		if (destFolder.getFullPath().startsWith(transferFolder.getFullPath())) {
 			throw new RuntimeException("자신의 하위 폴더로 옮겨질 수 없습니다.");
@@ -121,6 +125,9 @@ public class FolderService {
 		// 부모가 바뀌는 것은 단 하나 -> 부모폴더와의 매핑이 변경되어야 하는 것은 직접 이동하는 폴더 뿐임
 		// 다른 폴더들은 위에서 경로에 대한 갱신을 진행했음
 		transferFolder.move(destFolder);
+
+		destFolder.setUpdateAt(LocalDateTime.now());
+		beforeFolder.setUpdateAt(LocalDateTime.now());
 
 		return FolderResponse.fromMyFolder(destFolder);
 	}
