@@ -1,5 +1,7 @@
 package com.jongmin.mystorage.model;
 
+import com.jongmin.mystorage.model.value.GradeMaxSize;
+
 import jakarta.persistence.Entity;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,6 +15,7 @@ public class StorageInfo extends BaseEntity {
 	private Long size;
 	private Long fileCount;
 	private Long folderCount;
+	private Long maxSize;
 
 	@Builder
 	public StorageInfo(String ownerName, Long size, Long fileCount, Long folderCount) {
@@ -20,6 +23,7 @@ public class StorageInfo extends BaseEntity {
 		this.size = size;
 		this.fileCount = fileCount;
 		this.folderCount = folderCount;
+		this.maxSize = GradeMaxSize.NORMAL;
 	}
 
 	public StorageInfo(String ownerName) {

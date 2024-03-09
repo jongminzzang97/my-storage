@@ -42,11 +42,14 @@ public class FileService {
 			throw new FileAlreadyExistException("이미 동일한 이름의 파일이 존재합니다.");
 		}
 
+		StorageInfo storageInfo = storageInfoRepositoryUtils.getStorageInfo(ownerName);
+		if (storageInfo.getSize() + requestDto.getMultipartFile().getSize() >  storageInfo.getMaxSize()) {
+			throw new FileAlreadyExistException("자신의 스토리지 용량을 초과하여 저장할 수 없습니다.");
+		}
+
 		fileIoUtils.save(requestDto.getMultipartFile(), myFileEntity);
 		fileRepository.save(myFileEntity);
 		parentFolder.getParentFolder().setUpdateAt(LocalDateTime.now());
-
-		StorageInfo storageInfo = storageInfoRepositoryUtils.getStorageInfo(ownerName);
 		storageInfoRepositoryUtils.addFile(storageInfo, myFileEntity);
 
 		return FileResponse.fromMyFile(myFileEntity);
