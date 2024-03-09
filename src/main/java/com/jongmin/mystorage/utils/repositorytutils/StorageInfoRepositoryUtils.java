@@ -47,4 +47,19 @@ public class StorageInfoRepositoryUtils {
 		return storageInfo;
 	}
 
+	public StorageInfo addFolder(StorageInfo storageInfo, Long count) {
+		storageInfo.setFolderCount(storageInfo.getFolderCount() + count);
+		return storageInfo;
+	}
+
+	public StorageInfo deleteFolder(StorageInfo storageInfo) {
+		storageInfo.setFolderCount(storageInfo.getFolderCount() - 1);
+		return storageInfo;
+	}
+
+	public StorageInfo deleteFile(StorageInfo storageInfo, MyFile checkedFile) {
+		storageInfo.setFolderCount(storageInfo.getFolderCount() - 1);
+		storageInfo.setSize(storageInfo.getSize() - checkedFile.getSize());
+		return storageInfo;
+	}
 }

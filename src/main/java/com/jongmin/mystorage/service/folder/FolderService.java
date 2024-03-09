@@ -93,6 +93,7 @@ public class FolderService {
 	public StringResponse deleteFolder(String ownerName, UUID folderId) {
 
 		MyFolder myFolder = folderRepositoryUtils.getFolderByUuidWithSavedStatus(ownerName, folderId);
+		StorageInfo storageInfo = storageInfoRepositoryUtils.getStorageInfo(ownerName);
 		String fullPath = myFolder.getFullPath();
 
 		List<MyFile> files = fileRepository.findByOwnerNameAndFullPathStartingWith(ownerName, fullPath);
@@ -103,6 +104,7 @@ public class FolderService {
 		folders.stream().forEach(MyFolder::deleteFolder);
 
 		myFolder.getParentFolder().setUpdateAt(LocalDateTime.now());
+		storageInfoRepositoryUtils.deleteFolder(storageInfo);
 
 		return new StringResponse("폴더 삭제가 완료되었습니다");
 	}

@@ -62,6 +62,7 @@ public class FileService {
 		// 파일 상태를 확인하고 삭제하는 과정이 atomic하게 진행될 수 있도록 추후에 수정이 필요합니다.
 		// 파일을 다운로드 받는 사용자가 있는 경우 역시 고려되어야 합니다.
 		MyFile checkedFile = fileRepositoryUtils.getFileByUuidWithSavedStatus(ownerName, fileUuid);
+		StorageInfo storageInfo = storageInfoRepositoryUtils.getStorageInfo(ownerName);
 
 		if (fileIoUtils.fileNotExists(checkedFile)) {
 			throw new FileNotInFileSystemException("파일이 디스크 상에 존재하지 않습니다.");
@@ -69,6 +70,7 @@ public class FileService {
 		fileRepositoryUtils.deleteFile(checkedFile);
 		fileIoUtils.deleteFile(checkedFile);
 		checkedFile.getParentFolder().setUpdateAt(LocalDateTime.now());
+		storageInfoRepositoryUtils.deleteFile(storageInfo, checkedFile);
 
 		return new StringResponse("요청한 파일에 대한 삭제가 성공적으로 진행되었습니다.");
 	}
