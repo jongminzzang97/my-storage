@@ -1,7 +1,6 @@
 package com.jongmin.mystorage.utils.repositorytutils;
 
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.jongmin.mystorage.model.MyFile;
 import com.jongmin.mystorage.model.StorageInfo;
@@ -58,7 +57,7 @@ public class StorageInfoRepositoryUtils {
 	}
 
 	public StorageInfo deleteFile(StorageInfo storageInfo, MyFile checkedFile) {
-		storageInfo.setFolderCount(storageInfo.getFolderCount() - 1);
+		storageInfo.setFileCount(storageInfo.getFileCount() - 1);
 		storageInfo.setSize(storageInfo.getSize() - checkedFile.getSize());
 		return storageInfo;
 	}
