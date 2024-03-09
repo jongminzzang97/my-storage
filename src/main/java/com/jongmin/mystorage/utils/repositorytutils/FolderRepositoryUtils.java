@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.jongmin.mystorage.exception.FileNotInDatabaseException;
 import com.jongmin.mystorage.model.MyFolder;
+import com.jongmin.mystorage.model.StorageInfo;
 import com.jongmin.mystorage.model.enums.FileItemStatus;
 import com.jongmin.mystorage.repository.FolderRepository;
 
@@ -17,6 +18,7 @@ import lombok.AllArgsConstructor;
 public class FolderRepositoryUtils {
 
 	private final FolderRepository folderRepository;
+	public final StorageInfoRepositoryUtils storageInfoRepositoryUtils;
 
 	public MyFolder createAndPersistRootFolder(String ownerName) {
 		MyFolder root = MyFolder.createMyFolderEntity(ownerName, "", null);
@@ -40,6 +42,8 @@ public class FolderRepositoryUtils {
 		Optional<MyFolder> optional = folderRepository.findByOwnerNameAndFullPath(ownerName, "");
 		MyFolder root;
 		if (optional.isEmpty()) {
+			StorageInfo storageInfo = storageInfoRepositoryUtils.getStorageInfo(ownerName);
+			storageInfoRepositoryUtils.addFolder(storageInfo);
 			root = createAndPersistRootFolder(ownerName);
 		} else {
 			root = optional.get();

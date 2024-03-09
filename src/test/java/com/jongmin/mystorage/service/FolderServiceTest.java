@@ -239,4 +239,77 @@ public class FolderServiceTest {
 		assertThat(files).allMatch(file -> file.getStatus() == FileItemStatus.DELETED);
 	}
 
+	@DisplayName("readFolder: 최상단 폴더에서의 정상 흐름")
+	@Test
+	@Transactional
+	void readFolder() {
+		// given
+		StorageInfo storageInfo = storageInfoRepositoryUtils.getStorageInfo("testOwner");
+
+		MyFolder root = folderRepositoryUtils.createAndPersistRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createAndPersistFolder("testOwner", "hello", root);
+		MyFolder world = folderRepositoryUtils.createAndPersistFolder("testOwner", "world", hello);
+		storageInfoRepositoryUtils.addFolder(storageInfo, 3L);
+
+		MockMultipartFile mockFile1 = new MockMultipartFile("file1.txt", "file1.txt", "text/plain",
+			new byte[] {1, 2, 3});
+		MockMultipartFile mockFile2 = new MockMultipartFile("file2.txt", "file2.txt", "text/plain", new byte[] {123});
+		MyFile file1 = fileRepositoryUtils.createAndPersistFile(mockFile1, "testOwner", hello);
+		MyFile file2 = fileRepositoryUtils.createAndPersistFile(mockFile2, "testOwner", world);
+		fileIoUtils.save(mockFile1, file1);
+		fileIoUtils.save(mockFile2, file2);
+
+		storageInfoRepositoryUtils.addFile(storageInfo, file1);
+		storageInfoRepositoryUtils.addFile(storageInfo, file2);
+
+		entityManager.flush();
+		entityManager.clear();
+
+		// when
+		FolderInfoResponse response = folderService.readFolder("testOwner", null);
+
+		// then
+		assertThat(response.getFolders().size()).isEqualTo(1);
+		assertThat(response.getFiles().size()).isEqualTo(0);
+		assertThat(response.getFolderCount()).isEqualTo(2);
+		assertThat(response.getFileCount()).isEqualTo(2);
+		assertThat(response.getSize()).isEqualTo(4L);
+	}
+
+	@DisplayName("readFolder: 최상단 폴더가 아닌 폴더에서의 정상 흐름")
+	@Test
+	@Transactional
+	void readFolder2() {
+		// given
+		StorageInfo storageInfo = storageInfoRepositoryUtils.getStorageInfo("testOwner");
+
+		MyFolder root = folderRepositoryUtils.createAndPersistRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createAndPersistFolder("testOwner", "hello", root);
+		MyFolder world = folderRepositoryUtils.createAndPersistFolder("testOwner", "world", hello);
+		storageInfoRepositoryUtils.addFolder(storageInfo, 3L);
+
+		MockMultipartFile mockFile1 = new MockMultipartFile("file1.txt", "file1.txt", "text/plain",
+			new byte[] {1, 2, 3});
+		MockMultipartFile mockFile2 = new MockMultipartFile("file2.txt", "file2.txt", "text/plain", new byte[] {123});
+		MyFile file1 = fileRepositoryUtils.createAndPersistFile(mockFile1, "testOwner", hello);
+		MyFile file2 = fileRepositoryUtils.createAndPersistFile(mockFile2, "testOwner", world);
+		fileIoUtils.save(mockFile1, file1);
+		fileIoUtils.save(mockFile2, file2);
+
+		storageInfoRepositoryUtils.addFile(storageInfo, file1);
+		storageInfoRepositoryUtils.addFile(storageInfo, file2);
+
+		entityManager.flush();
+		entityManager.clear();
+
+		// when
+		FolderInfoResponse response = folderService.readFolder("testOwner", hello.getUuid());
+
+		// then
+		assertThat(response.getFolders().size()).isEqualTo(1);
+		assertThat(response.getFiles().size()).isEqualTo(1);
+		assertThat(response.getFolderCount()).isEqualTo(1);
+		assertThat(response.getFileCount()).isEqualTo(2);
+		assertThat(response.getSize()).isEqualTo(4L);
+	}
 }
