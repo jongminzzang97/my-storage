@@ -23,6 +23,7 @@ import com.jongmin.mystorage.model.MyFile;
 import com.jongmin.mystorage.model.MyFolder;
 import com.jongmin.mystorage.model.StorageInfo;
 import com.jongmin.mystorage.model.enums.FileItemStatus;
+import com.jongmin.mystorage.model.value.GradeMaxSize;
 import com.jongmin.mystorage.repository.FileRepository;
 import com.jongmin.mystorage.repository.FolderRepository;
 import com.jongmin.mystorage.repository.StorageInfoRepository;
@@ -108,6 +109,29 @@ public class FileServiceTest {
 		);
 		assertThat(exception.getMessage()).isEqualTo("이미 동일한 이름의 파일이 존재합니다.");
 	}
+
+	@DisplayName("uploadFile : 폴더 내 용량을 초과하면 파일을 업로드할 수 없다.")
+	@Test
+	@Transactional
+	public void uploadFileTestInvalidCapacity() {
+		// given
+		StorageInfo storageInfo = storageInfoRepositoryUtils.getStorageInfo("testOwner");
+		MyFolder root = folderRepositoryUtils.createAndPersistRootFolder("testOwner");
+		MyFolder hello = folderRepositoryUtils.createAndPersistFolder("testOwner", "hello", root);
+		MockMultipartFile mockFile1 = new MockMultipartFile("test.txt", "test.txt", "text/plain", new byte[] {1, 2, 3});
+
+		UploadFileRequestDto requestDto1 = new UploadFileRequestDto(mockFile1, hello.getUuid());
+
+		storageInfo.setSize(GradeMaxSize.NORMAL - 1);
+
+		// when - then
+		RuntimeException exception = assertThrows(
+			RuntimeException.class, () -> fileService.uploadFile("testOwner", requestDto1)
+		);
+		assertThat(exception.getMessage()).isEqualTo("자신의 스토리지 용량을 초과하여 저장할 수 없습니다.");
+	}
+
+
 
 	@DisplayName("readFile : 정상 흐름")
 	@Test

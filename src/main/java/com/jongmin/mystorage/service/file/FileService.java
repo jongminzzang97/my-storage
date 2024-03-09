@@ -44,7 +44,7 @@ public class FileService {
 
 		StorageInfo storageInfo = storageInfoRepositoryUtils.getStorageInfo(ownerName);
 		if (storageInfo.getSize() + requestDto.getMultipartFile().getSize() >  storageInfo.getMaxSize()) {
-			throw new FileAlreadyExistException("자신의 스토리지 용량을 초과하여 저장할 수 없습니다.");
+			throw new RuntimeException("자신의 스토리지 용량을 초과하여 저장할 수 없습니다.");
 		}
 
 		fileIoUtils.save(requestDto.getMultipartFile(), myFileEntity);
