@@ -24,4 +24,6 @@ public interface FolderRepository extends JpaRepository<MyFolder, Long> {
 		Long id, FileItemStatus status);
 
 	List<MyFolder> findByOwnerNameAndFullPathStartingWith(String ownerName, String fullPath);
+
+	Long countByOwnerNameAndFullPathStartingWithAndStatus(String ownerName, String fullPath, FileItemStatus status);
 }

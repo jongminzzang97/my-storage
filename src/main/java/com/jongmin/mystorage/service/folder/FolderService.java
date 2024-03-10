@@ -1,5 +1,6 @@
 package com.jongmin.mystorage.service.folder;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -8,6 +9,9 @@ import org.springframework.stereotype.Service;
 import com.jongmin.mystorage.exception.FileAlreadyExistException;
 import com.jongmin.mystorage.model.MyFile;
 import com.jongmin.mystorage.model.MyFolder;
+import com.jongmin.mystorage.model.StorageInfo;
+import com.jongmin.mystorage.model.enums.FileItemStatus;
+import com.jongmin.mystorage.repository.CountAndSum;
 import com.jongmin.mystorage.repository.FileRepository;
 import com.jongmin.mystorage.repository.FolderRepository;
 import com.jongmin.mystorage.service.response.FolderInfoResponse;
@@ -15,6 +19,7 @@ import com.jongmin.mystorage.service.response.FolderResponse;
 import com.jongmin.mystorage.service.response.StringResponse;
 import com.jongmin.mystorage.utils.ioutils.FileIoUtils;
 import com.jongmin.mystorage.utils.repositorytutils.FolderRepositoryUtils;
+import com.jongmin.mystorage.utils.repositorytutils.StorageInfoRepositoryUtils;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +34,7 @@ public class FolderService {
 
 	private final FileRepository fileRepository;
 	private final FileIoUtils fileIoUtils;
+	private final StorageInfoRepositoryUtils storageInfoRepositoryUtils;
 
 	@Transactional
 	public FolderResponse createFolder(String ownerName, String folderName, UUID parentFolderUuid) {
@@ -48,8 +54,11 @@ public class FolderService {
 			}
 		}
 
-		MyFolder createdFolder = MyFolder.createMyFolderEntity(ownerName, folderName, parentFolder);
-		folderRepository.save(createdFolder);
+		MyFolder createdFolder = folderRepositoryUtils.createAndPersistFolder(ownerName, folderName, parentFolder);
+		parentFolder.setUpdateAt(LocalDateTime.now());
+
+		StorageInfo storageInfo = storageInfoRepositoryUtils.getStorageInfo(ownerName);
+		storageInfoRepositoryUtils.addFolder(storageInfo);
 
 		return FolderResponse.fromMyFolder(createdFolder);
 	}
@@ -57,19 +66,34 @@ public class FolderService {
 	@Transactional
 	public FolderInfoResponse readFolder(String ownerName, UUID folderId) {
 		MyFolder folder;
+		Long folderCount;
+		Long fileCount;
+		Long size;
 		if (folderId == null) {
 			folder = folderRepositoryUtils.getRootFolder(ownerName);
+			// root : storageInfo를 이용해서 구하기
+			StorageInfo storageInfo = storageInfoRepositoryUtils.getStorageInfo(ownerName);
+			folderCount = storageInfo.getFolderCount() - 1;
+			fileCount = storageInfo.getFileCount();
+			size = storageInfo.getSize();
 		} else {
 			folder = folderRepositoryUtils.getFolderByUuidWithSavedStatus(ownerName, folderId);
+			folderCount = folderRepository.countByOwnerNameAndFullPathStartingWithAndStatus(ownerName,
+				folder.getFullPath(), FileItemStatus.SAVED) - 1;
+			CountAndSum countAndSum = fileRepository.countAndSumByOwnerNameAndFullPath(ownerName, folder.getFullPath());
+
+			fileCount = countAndSum.getCount();
+			size = countAndSum.getTotalSize();
 		}
 
-		return FolderInfoResponse.fromMyFolder(folder);
+		return FolderInfoResponse.fromMyFolder(folder, folderCount, fileCount, size);
 	}
 
 	@Transactional
 	public StringResponse deleteFolder(String ownerName, UUID folderId) {
 
 		MyFolder myFolder = folderRepositoryUtils.getFolderByUuidWithSavedStatus(ownerName, folderId);
+		StorageInfo storageInfo = storageInfoRepositoryUtils.getStorageInfo(ownerName);
 		String fullPath = myFolder.getFullPath();
 
 		List<MyFile> files = fileRepository.findByOwnerNameAndFullPathStartingWith(ownerName, fullPath);
@@ -78,6 +102,9 @@ public class FolderService {
 
 		List<MyFolder> folders = folderRepository.findByOwnerNameAndFullPathStartingWith(ownerName, fullPath);
 		folders.stream().forEach(MyFolder::deleteFolder);
+
+		myFolder.getParentFolder().setUpdateAt(LocalDateTime.now());
+		storageInfoRepositoryUtils.deleteFolder(storageInfo);
 
 		return new StringResponse("폴더 삭제가 완료되었습니다");
 	}
@@ -99,6 +126,7 @@ public class FolderService {
 
 		MyFolder transferFolder = folderRepositoryUtils.getFolderByUuidWithSavedStatus(ownerName, transferFolderUuid);
 		MyFolder destFolder = folderRepositoryUtils.getFolderByUuidWithSavedStatus(ownerName, destFolderUuid);
+		MyFolder beforeFolder = transferFolder.getParentFolder();
 
 		if (destFolder.getFullPath().startsWith(transferFolder.getFullPath())) {
 			throw new RuntimeException("자신의 하위 폴더로 옮겨질 수 없습니다.");
@@ -121,6 +149,9 @@ public class FolderService {
 		// 부모가 바뀌는 것은 단 하나 -> 부모폴더와의 매핑이 변경되어야 하는 것은 직접 이동하는 폴더 뿐임
 		// 다른 폴더들은 위에서 경로에 대한 갱신을 진행했음
 		transferFolder.move(destFolder);
+
+		destFolder.setUpdateAt(LocalDateTime.now());
+		beforeFolder.setUpdateAt(LocalDateTime.now());
 
 		return FolderResponse.fromMyFolder(destFolder);
 	}

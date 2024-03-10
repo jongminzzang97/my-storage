@@ -20,10 +20,14 @@ public class FolderInfoResponse {
 	private LocalDateTime updatedAt;
 	private List<FolderResponse> folders;
 	private List<FileResponse> files;
+	private Long folderCount;
+	private Long fileCount;
+	private Long size;
 
 	@Builder
 	public FolderInfoResponse(String folderName, UUID uuid, String fullPath, LocalDateTime createdAt,
-		LocalDateTime updatedAt, List<FolderResponse> folders, List<FileResponse> files) {
+		LocalDateTime updatedAt, List<FolderResponse> folders, List<FileResponse> files, Long folderCount,
+		Long fileCount, Long size) {
 		this.folderName = folderName;
 		this.uuid = uuid;
 		this.fullPath = fullPath;
@@ -31,6 +35,9 @@ public class FolderInfoResponse {
 		this.updatedAt = updatedAt;
 		this.folders = folders;
 		this.files = files;
+		this.folderCount = folderCount;
+		this.fileCount = fileCount;
+		this.size = size;
 	}
 
 	public static FolderInfoResponse fromMyFolder(MyFolder myFolder) {
@@ -58,6 +65,15 @@ public class FolderInfoResponse {
 			.folders(folders)
 			.files(files)
 			.build();
+	}
+
+	public static FolderInfoResponse fromMyFolder(MyFolder myFolder, Long folderCount, Long fileCount, Long size) {
+		FolderInfoResponse response = FolderInfoResponse.fromMyFolder(myFolder);
+		response.fileCount = fileCount;
+		response.folderCount = folderCount;
+		response.size = size;
+
+		return response;
 	}
 
 }

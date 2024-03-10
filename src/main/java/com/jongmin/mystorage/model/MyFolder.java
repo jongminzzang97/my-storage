@@ -1,5 +1,6 @@
 package com.jongmin.mystorage.model;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -73,6 +74,11 @@ public class MyFolder extends FileSystemItem {
 	public MyFolder replacePath(String from, String to) {
 		this.parentPath = this.getParentPath().replaceFirst(from, to);
 		this.fullPath = this.parentPath + "/" + this.folderName;
+		return this;
+	}
+
+	public MyFolder setUpdateAt(LocalDateTime time) {
+		this.updatedAt = time;
 		return this;
 	}
 }
