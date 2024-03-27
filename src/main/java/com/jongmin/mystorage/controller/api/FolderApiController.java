@@ -15,10 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.jongmin.mystorage.controller.api.dto.FolderUpdateDto;
 import com.jongmin.mystorage.controller.api.dto.MoveRequestDto;
+import com.jongmin.mystorage.service.SharedFolderService;
 import com.jongmin.mystorage.service.folder.FolderService;
-import com.jongmin.mystorage.service.response.FileResponse;
 import com.jongmin.mystorage.service.response.FolderInfoResponse;
 import com.jongmin.mystorage.service.response.FolderResponse;
+import com.jongmin.mystorage.service.response.SharedFolderResponse;
 import com.jongmin.mystorage.service.response.StringResponse;
 
 import lombok.AllArgsConstructor;
@@ -28,17 +29,18 @@ import lombok.AllArgsConstructor;
 public class FolderApiController {
 
 	private final FolderService folderService;
+	private final SharedFolderService sharedFolderService;
 
 	@PostMapping({"/api/folders", "/api/folders/{parentFolderId}"})
 	public FolderResponse createFolder(@RequestBody HashMap<String, String> map,
-										@PathVariable(name = "parentFolderId", required = false) UUID parentFolderId,
-										@RequestHeader("ownerName") String ownerName) {
+		@PathVariable(name = "parentFolderId", required = false) UUID parentFolderId,
+		@RequestHeader("ownerName") String ownerName) {
 		return folderService.createFolder(ownerName, map.get("folderName"), parentFolderId);
 	}
 
 	@GetMapping({"/api/folders", "/api/folders/{folderId}"})
 	public FolderInfoResponse readFolder(@PathVariable(name = "folderId", required = false) UUID folderId,
-											@RequestHeader("ownerName") String ownerName) {
+		@RequestHeader("ownerName") String ownerName) {
 		return folderService.readFolder(ownerName, folderId);
 	}
 
@@ -51,7 +53,7 @@ public class FolderApiController {
 
 	@DeleteMapping("/api/folders/{folderId}")
 	public StringResponse deleteFolder(@PathVariable(name = "folderId", required = false) UUID folderId,
-											@RequestHeader("ownerName") String ownerName) {
+		@RequestHeader("ownerName") String ownerName) {
 		return folderService.deleteFolder(ownerName, folderId);
 	}
 
@@ -60,5 +62,11 @@ public class FolderApiController {
 		@PathVariable(name = "folderUuid", required = true) UUID transferFolderUuid,
 		@RequestBody MoveRequestDto requestDto) {
 		return folderService.moveFolder(ownerName, transferFolderUuid, requestDto.getDestFolderUuid());
+	}
+
+	@PostMapping("/api/folders/{folderUuid}/share")
+	public SharedFolderResponse shareFile(@RequestHeader("ownerName") String ownerName,
+		@PathVariable(name = "folderUuid", required = true) UUID folderUuid) {
+		return sharedFolderService.createSharedFolder(ownerName, folderUuid);
 	}
 }
