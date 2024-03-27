@@ -34,7 +34,7 @@ public class FileApiController {
 
 	@PostMapping("/api/files/upload")
 	public FileResponse uploadFile(@RequestHeader("ownerName") String ownerName,
-									@ModelAttribute UploadFileRequestDto requestDto) {
+		@ModelAttribute UploadFileRequestDto requestDto) {
 		return fileService.uploadFile(ownerName, requestDto);
 	}
 
@@ -66,13 +66,14 @@ public class FileApiController {
 
 	@PostMapping("/api/files/{fileUuid}/move")
 	public FileResponse moveFile(@RequestHeader("ownerName") String ownerName,
-								@PathVariable(name = "fileUuid", required = true) UUID fileUuid,
-								@RequestBody MoveRequestDto requestDto) {
+		@PathVariable(name = "fileUuid", required = true) UUID fileUuid,
+		@RequestBody MoveRequestDto requestDto) {
 		return fileService.moveFile(ownerName, fileUuid, requestDto.getDestFolderUuid());
 	}
 
 	@PostMapping("/api/files/{fileUuid}/share")
-	public SharedFileResponse shareFile(@RequestHeader("ownerName") String ownerName, @PathVariable(name = "fileUuid", required = true) UUID fileUuid) {
+	public SharedFileResponse shareFile(@RequestHeader("ownerName") String ownerName,
+		@PathVariable(name = "fileUuid", required = true) UUID fileUuid) {
 		return sharedFileService.createSharedFile(ownerName, fileUuid);
 	}
 }

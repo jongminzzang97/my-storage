@@ -43,7 +43,7 @@ public class FileService {
 		}
 
 		StorageInfo storageInfo = storageInfoRepositoryUtils.getStorageInfo(ownerName);
-		if (storageInfo.getSize() + requestDto.getMultipartFile().getSize() >  storageInfo.getMaxSize()) {
+		if (storageInfo.getSize() + requestDto.getMultipartFile().getSize() > storageInfo.getMaxSize()) {
 			throw new RuntimeException("자신의 스토리지 용량을 초과하여 저장할 수 없습니다.");
 		}
 
