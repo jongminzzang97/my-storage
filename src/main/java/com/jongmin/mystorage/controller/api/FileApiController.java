@@ -17,8 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.jongmin.mystorage.controller.api.dto.MoveRequestDto;
 import com.jongmin.mystorage.controller.api.dto.UploadFileRequestDto;
+import com.jongmin.mystorage.service.SharedFileService;
 import com.jongmin.mystorage.service.file.FileService;
 import com.jongmin.mystorage.service.response.FileResponse;
+import com.jongmin.mystorage.service.response.SharedFileResponse;
 import com.jongmin.mystorage.service.response.StringResponse;
 
 import lombok.AllArgsConstructor;
@@ -28,10 +30,11 @@ import lombok.AllArgsConstructor;
 public class FileApiController {
 
 	private final FileService fileService;
+	private final SharedFileService sharedFileService;
 
 	@PostMapping("/api/files/upload")
 	public FileResponse uploadFile(@RequestHeader("ownerName") String ownerName,
-									@ModelAttribute UploadFileRequestDto requestDto) {
+		@ModelAttribute UploadFileRequestDto requestDto) {
 		return fileService.uploadFile(ownerName, requestDto);
 	}
 
@@ -63,8 +66,14 @@ public class FileApiController {
 
 	@PostMapping("/api/files/{fileUuid}/move")
 	public FileResponse moveFile(@RequestHeader("ownerName") String ownerName,
-								@PathVariable(name = "fileUuid", required = true) UUID fileUuid,
-								@RequestBody MoveRequestDto requestDto) {
+		@PathVariable(name = "fileUuid", required = true) UUID fileUuid,
+		@RequestBody MoveRequestDto requestDto) {
 		return fileService.moveFile(ownerName, fileUuid, requestDto.getDestFolderUuid());
+	}
+
+	@PostMapping("/api/files/{fileUuid}/share")
+	public SharedFileResponse shareFile(@RequestHeader("ownerName") String ownerName,
+		@PathVariable(name = "fileUuid", required = true) UUID fileUuid) {
+		return sharedFileService.createSharedFile(ownerName, fileUuid);
 	}
 }

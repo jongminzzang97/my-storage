@@ -21,7 +21,7 @@ public interface FileRepository extends JpaRepository<MyFile, Long> {
 
 	Optional<MyFile> findByUuidAndStatus(UUID fileUuid, FileItemStatus status);
 
-	Optional<MyFile> findByFileName(String fileName);
+	Optional<MyFile> findByOwnerNameAndFullPathAndStatus(String ownerName, String fullPath, FileItemStatus status);
 
 	List<MyFile> findByOwnerNameAndFullPathStartingWith(String ownerName, String fullPath);
 
